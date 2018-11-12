@@ -7,9 +7,9 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 {
-	public class CreateUserRequestHandler : IProtocolRequestHandler<CreateUserRequest, CreateUserResponse>
+	public class CreateUserRequestHandler : IProtocolRequestHandler<CreateUserRequest, AcknowledgementResponse>
 	{
-		public CreateUserResponse GetResponse(CreateUserRequest request)
+		public AcknowledgementResponse GetResponse(CreateUserRequest request)
 		{
 			throw new NotImplementedException();
 		}

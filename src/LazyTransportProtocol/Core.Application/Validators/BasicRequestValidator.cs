@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace LazyTransportProtocol.Core.Application.Validators
 {
-	internal class BasicRequestValidator<TRequest> : IRequestValidator<TRequest>
+	internal class BasicRequestValidator<TRequest> : IPipelineValidator<TRequest>
 		where TRequest : IRequest<IResponse>
 	{
 		private List<KeyValuePair<MemberInfo, IValidator>> _validators = new List<KeyValuePair<MemberInfo, IValidator>>();

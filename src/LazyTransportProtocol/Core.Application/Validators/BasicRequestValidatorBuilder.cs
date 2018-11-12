@@ -6,12 +6,12 @@ using System.Linq.Expressions;
 
 namespace LazyTransportProtocol.Core.Application.Validators
 {
-	public class BasicRequestValidatorBuilder<TRequest> : IRequestValidatorBuilder<TRequest>
+	public class BasicRequestValidatorBuilder<TRequest> : IPipelineValidatorBuilder<TRequest>
 		where TRequest : IRequest<IResponse>
 	{
 		private BasicRequestValidator<TRequest> _requestValidator = new BasicRequestValidator<TRequest>();
 
-		public IRequestValidatorBuilder<TRequest> AddPropertyValidator<TValue>(Expression<Func<TRequest, TValue>> expression, IValidator validator)
+		public IPipelineValidatorBuilder<TRequest> AddPropertyValidator<TValue>(Expression<Func<TRequest, TValue>> expression, IValidator validator)
 		{
 			MemberExpression memberExpression = expression.Body as MemberExpression;
 
@@ -20,7 +20,7 @@ namespace LazyTransportProtocol.Core.Application.Validators
 			return this;
 		}
 
-		public IRequestValidator<TRequest> Build()
+		public IPipelineValidator<TRequest> Build()
 		{
 			return _requestValidator;
 		}

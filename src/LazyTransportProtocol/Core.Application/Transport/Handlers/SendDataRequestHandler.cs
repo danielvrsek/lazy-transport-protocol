@@ -3,6 +3,9 @@ using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,12 +16,22 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 	{
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
-			return new SendDataResponse();
-		}
+			Socket socket = request.Sender;
+			socket.Send(request.Data);
 
-		public Task<SendDataResponse> GetResponseAsync(SendDataRequest request, CancellationToken cancellationToken)
-		{
-			throw new NotImplementedException();
+			byte[] bytes = new byte[1024];
+			int bytesRec = socket.Receive(bytes);
+
+			byte[] msg = new byte[bytesRec];
+			for (int i = 0; i < bytesRec; i++)
+			{
+				msg[i] = bytes[i];
+			}
+
+			return new SendDataResponse
+			{
+				ResponseData = msg
+			};
 		}
 	}
 }

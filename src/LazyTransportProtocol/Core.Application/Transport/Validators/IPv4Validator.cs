@@ -7,9 +7,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Validators
 	{
 		public bool Validate(object value)
 		{
-			string stringValue = value as String;
-
-			if (stringValue == null)
+			if (!(value is String stringValue))
 			{
 				return false;
 			}

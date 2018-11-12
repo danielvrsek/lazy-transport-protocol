@@ -1,11 +1,10 @@
 ﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
+using LazyTransportProtocol.Core.Transport.Infrastructure;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Net;
+using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
@@ -13,12 +12,21 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 	{
 		public ConnectToServerResponse GetResponse(ConnectToServerRequest request)
 		{
-			throw new NotImplementedException();
-		}
+			IPAddress ipAddress = IPAddress.Parse(request.IpAdress);
+			IPEndPoint remoteEP = new IPEndPoint(ipAddress, request.Port);
 
-		public Task<ConnectToServerResponse> GetResponseAsync(ConnectToServerRequest request, CancellationToken cancellationToken)
-		{
-			throw new NotImplementedException();
+			Socket sender = new Socket(ipAddress.AddressFamily,
+				SocketType.Stream, ProtocolType.Tcp);
+
+			sender.Connect(remoteEP);
+
+			return new ConnectToServerResponse
+			{
+				Connection = new SocketConnection
+				{
+					Sender = sender
+				}
+			};
 		}
 	}
 }

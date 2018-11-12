@@ -2,24 +2,32 @@
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
+using System;
 
 namespace LazyTransportProtocol.Core.Application.Pipeline
 {
-	public class BasicRequestPipelineBuilder<TRequest> : IRequestPipelineBuilder<TRequest>
+	public class BasicRequestPipelineBuilder<TRequest> : IPipelineBuilder<TRequest>
 		where TRequest : IRequest<IResponse>
 	{
 		private BasicPipelineQueue<TRequest> basicPipelineQueue = new BasicPipelineQueue<TRequest>();
 
-		public IRequestPipelineBuilder<TRequest> AddPipelineAction(PipelineAction<TRequest> pipelineAction)
+		public IPipelineBuilder<TRequest> AddPipelineAction(Action<TRequest> pipelineAction)
 		{
 			basicPipelineQueue.AddToQueue(pipelineAction);
 
 			return this;
 		}
 
-		public IRequestPipelineBuilder<TRequest> AddValidator(IRequestValidator<TRequest> validator)
+		public IPipelineBuilder<TRequest> AddValidator(IPipelineValidator<TRequest> validator)
 		{
 			AddPipelineAction((request) => validator.Validate(request));
+
+			return this;
+		}
+
+		public IPipelineBuilder<TRequest> OnException(Action<IPipelineExceptionContext<TRequest>> action)
+		{
+			basicPipelineQueue.OnError(action);
 
 			return this;
 		}

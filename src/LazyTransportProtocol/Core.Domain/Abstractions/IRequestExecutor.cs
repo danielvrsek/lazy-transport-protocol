@@ -10,6 +10,9 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions
 
 	public interface IRequestExecutor
 	{
+		bool CanExecute<TResponse>(IRequest<TResponse> request)
+			where TResponse : class, IResponse;
+
 		TResponse Execute<TResponse>(IRequest<TResponse> request)
 			where TResponse : class, IResponse;
 

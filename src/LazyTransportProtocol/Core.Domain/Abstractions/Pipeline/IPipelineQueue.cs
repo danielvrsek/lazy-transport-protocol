@@ -6,9 +6,8 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Domain.Abstractions.Pipeline
 {
-	public interface IPipelineQueue<in TRequest>
-		where TRequest : IRequest<IResponse>
+	public interface IPipelineQueue<T>
 	{
-		void ExecutePipelineQueue(TRequest request);
+		void ExecutePipelineQueue(T request);
 	}
 }

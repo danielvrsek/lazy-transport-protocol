@@ -1,5 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Abstractions;
-using LazyTransportProtocol.Core.Application.Transport.Handlers;
+﻿using LazyTransportProtocol.Core.Application.Transport.Handlers;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Validators;
 using LazyTransportProtocol.Core.Application.Validators;
@@ -15,10 +14,14 @@ namespace LazyTransportProtocol.Core.Application.Transport
 					new BasicRequestValidatorBuilder<ConnectToServerRequest>()
 						.AddPropertyValidator((request) => request.IpAdress, new IPv4Validator())
 						.AddPropertyValidator((request) => request.Port, new PortValidator())
-						.Build()
-				);
+						.Build())
+				.OnException((ctx) =>
+				{
+					// Handle error
+				});
 
-			//Register<SendDataRequest>((request) => new SendDataRequestHandler().GetResponse(request));
+			Register<SendDataRequest>((request) => new SendDataRequestHandler().GetResponse(request));
+			Register<EndConnectionRequest>((request) => new EndConnectionRequestHandler().GetResponse(request));
 		}
 	}
 }

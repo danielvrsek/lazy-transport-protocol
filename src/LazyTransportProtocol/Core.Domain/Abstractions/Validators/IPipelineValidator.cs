@@ -3,9 +3,8 @@ using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 
 namespace LazyTransportProtocol.Core.Domain.Abstractions.Validators
 {
-	public interface IRequestValidator<TRequest>
-		where TRequest : IRequest<IResponse>
+	public interface IPipelineValidator<T>
 	{
-		void Validate(TRequest request);
+		void Validate(T request);
 	}
 }
