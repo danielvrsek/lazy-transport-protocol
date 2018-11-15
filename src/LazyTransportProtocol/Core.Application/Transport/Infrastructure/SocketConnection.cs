@@ -26,7 +26,7 @@ namespace LazyTransportProtocol.Core.Transport.Infrastructure
 			return response.ResponseData;
 		}
 
-		public void Send(byte[] data, Action<byte[]> responseCallback)
+		public void SendAsync(byte[] data, Action<byte[]> responseCallback)
 		{
 			throw new NotImplementedException();
 		}

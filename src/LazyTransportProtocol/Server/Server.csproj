@@ -6,4 +6,8 @@
     <RootNamespace>LazyTransportProtocol.Server</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Core.Application\Core.Application.csproj" />
+  </ItemGroup>
+
 </Project>

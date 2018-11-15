@@ -9,7 +9,12 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 	{
 		public string Decode(byte[] data)
 		{
-			return UTF8Encoding.UTF8.GetString(data);
+			return Decode(data, 0, data.Length);
+		}
+
+		public string Decode(byte[] data, int index, int count)
+		{
+			return UTF8Encoding.UTF8.GetString(data, index, count);
 		}
 	}
 }

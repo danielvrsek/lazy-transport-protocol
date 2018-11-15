@@ -15,22 +15,13 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 {
 	public class HandshakeRequestHandler : IProtocolRequestHandler<HandshakeRequest, AcknowledgementResponse>
 	{
-		private IRequestExecutor transportExecutor = new TransportRequestExecutor();
-		private IRequestExecutor protocolExecutor = new RemoteProtocolRequestExecutor();
-		private IProtocolConfiguration protocolConfiguration = new ProtocolConfiguration();
-		private IEncoder protocolEncoder = new ProtocolEncoder();
-		private IDecoder protocolDecoder = new ProtocolDecoder();
-
 		public AcknowledgementResponse GetResponse(HandshakeRequest request)
 		{
-			byte[] bytes = protocolEncoder.Encode(request.Serialize(protocolConfiguration.ProtocolVersion));
-			string response = protocolDecoder.Decode(request.Connection.Send(bytes));
-
-			string[] flags = response.Split(' ');
+			Console.WriteLine($"Handshake. Data: {request.ProtocolVersion}, {request.Separator}");
 
 			return new AcknowledgementResponse
 			{
-				IsSuccessful = flags[0] == "OK"
+				IsSuccessful = true
 			};
 		}
 	}

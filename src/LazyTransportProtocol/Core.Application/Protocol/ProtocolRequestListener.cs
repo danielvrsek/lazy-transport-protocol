@@ -1,6 +1,10 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
+﻿using LazyTransportProtocol.Core.Application.Infrastructure;
+using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
+using LazyTransportProtocol.Core.Application.Protocol.Metadata;
+using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
+using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
@@ -21,11 +25,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 	{
 		private static ManualResetEvent allDone = new ManualResetEvent(false);
 
-		private readonly IRequestExecutor _requestExecutor;
-
-		private readonly
 		private readonly IEncoder _encoder = new ProtocolEncoder();
-
 		private readonly IDecoder _decoder = new ProtocolDecoder();
 
 		public void Listen(int port)
@@ -41,26 +41,21 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 			while (true)
 			{
-				// Set the event to nonsignaled state.
 				allDone.Reset();
 
-				// Start an asynchronous socket to listen for connections.
 				Console.WriteLine("Waiting for a connection...");
 				listener.BeginAccept(
-					new AsyncCallback(AcceptCallback),
+					new AsyncCallback(OnClientConnected),
 					listener);
 
-				// Wait until a connection is made before continuing.
 				allDone.WaitOne();
 			}
 		}
 
-		public static void AcceptCallback(IAsyncResult ar)
+		public static void OnClientConnected(IAsyncResult ar)
 		{
-			// Signal the main thread to continue.
 			allDone.Set();
 
-			// Get the socket that handles the client request.
 			Socket listener = (Socket)ar.AsyncState;
 			Socket handler = listener.EndAccept(ar);
 
@@ -71,74 +66,142 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			};
 
 			handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-				new AsyncCallback(ReadCallback), state);
+				new AsyncCallback(OnDataReceived), state);
 		}
 
-		public static void ReadCallback(IAsyncResult ar)
+		public static void OnDataReceived(IAsyncResult ar)
 		{
-			String content = String.Empty;
+			IDecoder decoder = new ProtocolDecoder();
 
-			// Retrieve the state object and the handler socket
-			// from the asynchronous state object.
 			StateObject state = (StateObject)ar.AsyncState;
 			Socket handler = state.WorkSocket;
 
-			// Read data from the client socket.
 			int bytesRead = handler.EndReceive(ar);
 
-			if (bytesRead > 0)
+			if (bytesRead == 0)
 			{
-				// There  might be more data, so store the data received so far.
-				state.StringBuilder.Append(Encoding.ASCII.GetString(
-					state.Buffer, 0, bytesRead));
+				return;
+			}
 
-				// Check for end-of-file tag. If it is not there, read
-				// more data.
-				content = state.StringBuilder.ToString();
-				if (content.IndexOf("<EOF>") > -1)
+			string decoded = decoder.Decode(state.Buffer, 0, bytesRead);
+			state.StringBuilder.Append(decoded);
+
+			string requestString = state.StringBuilder.ToString();
+
+			if (requestString.IndexOf("<EOF>") > -1)
+			{
+				// All the data has been read
+				Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
+					requestString.Length, requestString);
+
+				requestString = requestString.Replace("<EOF>", "");
+
+				IProtocolResponse protocolResponse = null;
+
+				if (state.ProtocolState == null)
 				{
-					// All the data has been read from the
-					// client. Display it on the console.
-					Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-						content.Length, content);
-					// Echo the data back to the client.
-					IRequest<IResponse> req = null;
-					new ProtocolRequestExecutor().Execute(req);
+					var headers = new Dictionary<string, string>()
+					{
+						{ HandshakeValuesMetadata.ControlSeparator, ";" }
+					};
 
-					Send(handler, content);
+					MediumDeserializedRequestObject requestObject = RequestDeserializeHelper.DeserializeRequestString(requestString, headers, ProtocolVersion.Handshake);
+
+					HandshakeRequest request = new HandshakeRequest();
+					request.Deserialize(requestObject, ProtocolVersion.Handshake);
+					var response = new ProtocolRequestExecutor().Execute(request);
+
+					if (response.IsSuccessful)
+					{
+						state.ProtocolState = new ProtocolState
+						{
+							ProtocolVersion = request.ProtocolVersion,
+							Separator = request.Separator
+						};
+					}
+
+					protocolResponse = response;
+
+					Send(state, protocolResponse.Serialize(ProtocolVersion.Handshake));
 				}
 				else
 				{
-					// Not all data received. Get more.
-					handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-					new AsyncCallback(ReadCallback), state);
+					ProtocolState connectionState = (ProtocolState)state.ProtocolState;
+
+					Dictionary<string, string> headers = new Dictionary<string, string>
+					{
+						{ HandshakeValuesMetadata.ControlSeparator, connectionState.Separator },
+						{ HandshakeValuesMetadata.ProtocolVersion, connectionState.ProtocolVersion.ToString() }
+					};
+
+					MediumDeserializedRequestObject requestObject = RequestDeserializeHelper.DeserializeRequestString(requestString, headers, connectionState.ProtocolVersion);
+					ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
+
+					switch (requestObject.ControlCommand)
+					{
+						case CreateUserRequest.Identifier:
+							protocolResponse = GetResponse(new CreateUserRequest());
+							break;
+
+						case AuthenticationRequest.Identifier:
+							protocolResponse = GetResponse(new AuthenticationRequest());
+							break;
+
+						case ListDirectoryClientRequest.Identifier:
+							protocolResponse = GetResponse(new ListDirectoryClientRequest());
+							break;
+					}
+
+					IProtocolResponse GetResponse<TResponse>(IProtocolRequest<TResponse> request)
+						where TResponse : class, IProtocolResponse, new()
+					{
+						request.Deserialize(requestObject, connectionState.ProtocolVersion);
+						return (IProtocolResponse)executor.Execute(request);
+					}
+
+					Send(state, protocolResponse.Serialize(connectionState.ProtocolVersion));
 				}
+			}
+			else
+			{
+				// Not all data received. Get more.
+				handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
+					new AsyncCallback(OnDataReceived), state);
 			}
 		}
 
-		private static void Send(Socket handler, String data)
+		private static void Send(StateObject state, String data)
 		{
-			// Convert the string data to byte data using ASCII encoding.
-			byte[] byteData = Encoding.ASCII.GetBytes(data);
+			IEncoder encoder = new ProtocolEncoder();
 
-			// Begin sending the data to the remote device.
-			handler.BeginSend(byteData, 0, byteData.Length, 0,
-				new AsyncCallback(SendCallback), handler);
+			byte[] byteData = encoder.Encode(data);
+
+			state.WorkSocket.BeginSend(byteData, 0, byteData.Length, 0,
+				new AsyncCallback(OnSendCompleted), state);
 		}
 
-		private static void SendCallback(IAsyncResult ar)
+		private static void OnSendCompleted(IAsyncResult ar)
 		{
 			try
 			{
-				// Retrieve the socket from the state object.
-				Socket handler = (Socket)ar.AsyncState;
+				StateObject state = (StateObject)ar.AsyncState;
+				Socket handler = state.WorkSocket;
 
-				// Complete sending the data to the remote device.
 				int bytesSent = handler.EndSend(ar);
 				Console.WriteLine("Sent {0} bytes to client.", bytesSent);
 
-				handler.Shutdown(SocketShutdown.Both);
-				handler.Close();
+				if (state.ProtocolState != null)
+				{
+					state.StringBuilder.Clear();
+					handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
+						new AsyncCallback(OnDataReceived), state);
+				}
+				else
+				{
+					// Unsuccessful handshake
+					handler.Shutdown(SocketShutdown.Both);
+					handler.Close();
+				}
 			}
 			catch (Exception e)
 			{
@@ -155,6 +218,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			public byte[] Buffer { get; } = new byte[BufferSize];
 
 			public StringBuilder StringBuilder { get; } = new StringBuilder();
+
+			public IConnectionState ProtocolState { get; set; }
 		}
 	}
 }

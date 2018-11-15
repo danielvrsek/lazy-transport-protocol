@@ -9,7 +9,7 @@ namespace LazyTransportProtocol.Core.Application.Transport
 	{
 		public override void Register()
 		{
-			Register<ConnectToServerRequest>((request) => new ConnectToServerRequestHandler().GetResponse(request))
+			Register(new ConnectToServerRequestHandler())
 				.AddValidator(
 					new BasicRequestValidatorBuilder<ConnectToServerRequest>()
 						.AddPropertyValidator((request) => request.IpAdress, new IPv4Validator())
@@ -20,8 +20,8 @@ namespace LazyTransportProtocol.Core.Application.Transport
 					// Handle error
 				});
 
-			Register<SendDataRequest>((request) => new SendDataRequestHandler().GetResponse(request));
-			Register<EndConnectionRequest>((request) => new EndConnectionRequestHandler().GetResponse(request));
+			Register(new SendDataRequestHandler());
+			Register(new EndConnectionRequestHandler());
 		}
 	}
 }

@@ -10,10 +10,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests
 {
 	public interface IRemoteRequestExecutor
 	{
+		void Connect(string ipAdress, int port);
+
 		TResponse Execute<TResponse>(IProtocolRequest<TResponse> request)
 			where TResponse : class, IProtocolResponse, new();
 
 		Task<TResponse> ExecuteAsync<TResponse>(IProtocolRequest<TResponse> request)
 			where TResponse : class, IProtocolResponse, new();
+
+		void Disconnect();
 	}
 }
