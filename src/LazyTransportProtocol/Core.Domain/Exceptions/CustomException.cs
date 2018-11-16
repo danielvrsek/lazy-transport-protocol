@@ -13,5 +13,9 @@ namespace LazyTransportProtocol.Core.Domain.Exceptions
 		protected CustomException(string message) : base(message)
 		{
 		}
+
+		protected CustomException(Exception exception) : base("See inner exception.", exception)
+		{
+		}
 	}
 }

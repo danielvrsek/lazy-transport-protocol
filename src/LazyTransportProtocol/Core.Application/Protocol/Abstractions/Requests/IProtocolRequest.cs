@@ -13,9 +13,5 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests
 		where TResponse : class, IProtocolResponse, new()
 	{
 		string GetIdentifier(ProtocolVersion protocolVersion);
-
-		string Serialize(AgreedHeadersDictionary headers, ProtocolVersion protocolVersion);
-
-		void Deserialize(MediumDeserializedRequestObject requestObject, ProtocolVersion protocolVersion);
 	}
 }

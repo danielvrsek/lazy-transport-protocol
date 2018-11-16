@@ -35,7 +35,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 
 			return new AcknowledgementResponse
 			{
-				IsSuccessful = isSuccessful
+				Code = isSuccessful ? 200 : 400
 			};
 		}
 	}

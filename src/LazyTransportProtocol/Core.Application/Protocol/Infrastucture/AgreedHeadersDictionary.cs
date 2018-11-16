@@ -9,11 +9,21 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Infrastucture
 {
 	public class AgreedHeadersDictionary : Dictionary<string, string>
 	{
+		public AgreedHeadersDictionary()
+		{
+		}
+
+		public AgreedHeadersDictionary(string separator, ProtocolVersion protocolVersion)
+		{
+			this[HandshakeHeadersMetadata.ControlSeparator] = separator;
+			this[HandshakeHeadersMetadata.ProtocolVersion] = protocolVersion.ToString();
+		}
+
 		public string Separator
 		{
 			get
 			{
-				return this[HandshakeValuesMetadata.ControlSeparator];
+				return this[HandshakeHeadersMetadata.ControlSeparator];
 			}
 		}
 
@@ -21,7 +31,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Infrastucture
 		{
 			get
 			{
-				return new ProtocolVersion(this[HandshakeValuesMetadata.ProtocolVersion]);
+				return new ProtocolVersion(this[HandshakeHeadersMetadata.ProtocolVersion]);
 			}
 		}
 	}

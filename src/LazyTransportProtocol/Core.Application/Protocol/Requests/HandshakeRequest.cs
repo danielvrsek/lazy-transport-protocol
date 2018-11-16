@@ -14,7 +14,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class HandshakeRequest : ProtocolRequestBase<AcknowledgementResponse>
+	public class HandshakeRequest : IProtocolRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "HANDSHAKE";
 
@@ -22,20 +22,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public string Separator { get; set; }
 
-		public override string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier(ProtocolVersion protocolVersion)
 		{
 			return Identifier;
-		}
-
-		protected override string SerializeInternal(AgreedHeadersDictionary headers, ProtocolVersion protocolVersion)
-		{
-			return GetIdentifier(protocolVersion) + ";" + $"protocolversion={ProtocolVersion}&separator={Separator}";
-		}
-
-		protected override void DeserializeInternal(MediumDeserializedRequestObject requestObject, ProtocolVersion protocolVersion)
-		{
-			ProtocolVersion = new ProtocolVersion(requestObject.Parameters.Get("protocolversion"));
-			Separator = requestObject.Parameters.Get("separator");
 		}
 	}
 }

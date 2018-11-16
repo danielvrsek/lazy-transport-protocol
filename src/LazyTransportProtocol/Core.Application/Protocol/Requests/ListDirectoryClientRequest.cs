@@ -8,27 +8,15 @@ using System.Collections.Generic;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class ListDirectoryClientRequest : ProtocolRequestBase<ListDirectoryResponse>
+	public class ListDirectoryClientRequest : IProtocolRequest<ListDirectoryResponse>
 	{
 		public const string Identifier = "HANDSHAKE";
 
 		public string Path { get; set; }
 
-		public override string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier(ProtocolVersion protocolVersion)
 		{
 			return Identifier;
-		}
-
-		protected override string SerializeInternal(AgreedHeadersDictionary headers, ProtocolVersion protocolVersion)
-		{
-			string separator = headers[HandshakeValuesMetadata.ControlSeparator];
-
-			return GetIdentifier(protocolVersion) + separator + $"path={Path}";
-		}
-
-		protected override void DeserializeInternal(MediumDeserializedRequestObject requestObject, ProtocolVersion protocolVersion)
-		{
-			Path = requestObject.Parameters.Get("path");
 		}
 	}
 }

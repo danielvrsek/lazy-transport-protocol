@@ -13,7 +13,7 @@ using LazyTransportProtocol.Core.Transport.Infrastructure;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class AuthenticationRequest : ProtocolRequestBase<AcknowledgementResponse>
+	public class AuthenticationRequest : IProtocolRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "AUTHENTICATE";
 
@@ -21,22 +21,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public string Password { get; set; }
 
-		public override string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier(ProtocolVersion protocolVersion)
 		{
 			return Identifier;
-		}
-
-		protected override string SerializeInternal(AgreedHeadersDictionary headers, ProtocolVersion protocolVersion)
-		{
-			string separator = headers[HandshakeValuesMetadata.ControlSeparator];
-
-			return GetIdentifier(protocolVersion) + separator + $"username={Username}&password={Password}";
-		}
-
-		protected override void DeserializeInternal(MediumDeserializedRequestObject requestObject, ProtocolVersion protocolVersion)
-		{
-			Username = requestObject.Parameters.Get("username");
-			Password = requestObject.Parameters.Get("password");
 		}
 	}
 }

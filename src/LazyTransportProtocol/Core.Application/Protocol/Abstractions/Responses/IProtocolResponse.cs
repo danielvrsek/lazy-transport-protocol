@@ -8,8 +8,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses
 {
 	public interface IProtocolResponse : IResponse
 	{
-		string Serialize(ProtocolVersion protocolVersion);
-
-		void Deserialize(string data, ProtocolVersion protocolVersion);
+		string GetIdentifier(ProtocolVersion protocolVersion);
 	}
 }

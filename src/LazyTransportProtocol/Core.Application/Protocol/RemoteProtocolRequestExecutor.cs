@@ -23,7 +23,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		private readonly IDecoder _decoder = new ProtocolDecoder();
 		private readonly ITransport _transport = new TransportLayer();
 
-		private const string _separator = "_";
+		private const string _separator = ";";
 		private readonly ProtocolVersion _protocolVersion = ProtocolVersion.V1_0;
 
 		public void Connect(string ipAdress, int port)
@@ -31,8 +31,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			_connection = _transport.Connect(ipAdress, port);
 			_connection.State = new ProtocolState
 			{
-				ProtocolVersion = _protocolVersion,
-				Separator = _separator
+				AgreedHeaders = new AgreedHeadersDictionary(";", ProtocolVersion.Handshake)
 			};
 
 			AcknowledgementResponse response = Execute(new HandshakeRequest
@@ -40,25 +39,27 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				ProtocolVersion = _protocolVersion,
 				Separator = _separator
 			});
+
+			ProtocolState state = (ProtocolState)_connection.State;
+
+			state.AgreedHeaders = new AgreedHeadersDictionary(_separator, _protocolVersion);
 		}
 
 		public TResponse Execute<TResponse>(IProtocolRequest<TResponse> request)
 			where TResponse : class, IProtocolResponse, new()
 		{
 			ProtocolState state = (ProtocolState)_connection.State;
-			AgreedHeadersDictionary headers = new AgreedHeadersDictionary()
-			{
-				{ HandshakeValuesMetadata.ControlSeparator, state.Separator },
-				{ HandshakeValuesMetadata.ProtocolVersion, state.ProtocolVersion.ToString() }
-			};
 
-			string requestDecoded = request.Serialize(headers, state.ProtocolVersion) + "<EOF>";
+			string requestBody = ProtocolBodySerializer.Serialize(request, state.AgreedHeaders.ProtocolVersion);
+			string requestString = SerializeHelper.SerializeRequestString(request.GetIdentifier(state.AgreedHeaders.ProtocolVersion), requestBody, state.AgreedHeaders);
+
+			string requestDecoded = requestString + "<EOF>";
 			byte[] requestEncoded = _encoder.Encode(requestDecoded);
 			byte[] responseEncoded = _connection.Send(requestEncoded);
 			string responseDecoded = _decoder.Decode(responseEncoded);
 
-			TResponse response = new TResponse();
-			response.Deserialize(responseDecoded, _protocolVersion);
+			var requestObject = DeserializeHelper.DeserializeRequestString(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
+			TResponse response = ProtocolBodyDeserializer.Deserialize<TResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
 
 			return response;
 		}

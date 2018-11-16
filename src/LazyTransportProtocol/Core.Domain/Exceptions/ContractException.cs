@@ -4,7 +4,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Domain.Exceptions
 {
-	public class RequestMismatchException : CustomException
+	public class ContractException : Exception
 	{
 	}
 }

@@ -9,18 +9,15 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 {
 	public class ListDirectoryResponse : IProtocolResponse
 	{
+		public const string Identifier = "LIST";
+
 		public List<RemoteFile> RemoteFiles { get; set; }
 
 		public List<RemoteDirectory> RemoteDirectories { get; set; }
 
-		public string Serialize(ProtocolVersion protocolVersion)
+		public string GetIdentifier(ProtocolVersion protocolVersion)
 		{
-			string directoriesSerialized =
-		}
-
-		public void Deserialize(string data, ProtocolVersion protocolVersion)
-		{
-			throw new NotImplementedException();
+			return Identifier;
 		}
 	}
 }

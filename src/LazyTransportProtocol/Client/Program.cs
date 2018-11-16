@@ -32,6 +32,8 @@ namespace LazyTransportProtocol.Client
 				flowService.CreateNewUser("vrsek", "1234");
 			}
 
+			flowService.ListDirectory("/");
+
 			Console.WriteLine("Disconnecting...");
 			flowService.Disconnect();
 		}

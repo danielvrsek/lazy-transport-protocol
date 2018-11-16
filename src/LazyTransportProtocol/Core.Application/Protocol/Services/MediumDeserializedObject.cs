@@ -5,10 +5,10 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
-	public class MediumDeserializedRequestObject
+	public class MediumDeserializedObject
 	{
 		public string ControlCommand { get; set; }
 
-		public NameValueCollection Parameters { get; set; }
+		public string Body { get; set; }
 	}
 }

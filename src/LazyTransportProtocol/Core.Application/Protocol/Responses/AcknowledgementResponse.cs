@@ -9,41 +9,21 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 {
 	public class AcknowledgementResponse : IProtocolResponse
 	{
-		public bool IsSuccessful { get; set; }
+		public const string Identifier = "ACK";
 
-		public int? ErrorCode { get; set; }
+		public int Code { get; set; }
 
-		public string Serialize(ProtocolVersion protocolVersion)
+		public bool IsSuccessful
 		{
-			if (IsSuccessful)
+			get
 			{
-				return "OK";
+				return Code == 200;
 			}
-
-			return $"ERR {ErrorCode?.ToString() ?? String.Empty}".TrimEnd();
 		}
 
-		public void Deserialize(string data, ProtocolVersion protocolVersion)
+		public string GetIdentifier(ProtocolVersion protocolVersion)
 		{
-			if (data == "OK")
-			{
-				IsSuccessful = true;
-			}
-			else if (data.StartsWith("ERR"))
-			{
-				IsSuccessful = false;
-
-				string[] flags = data.Split(' ');
-
-				if (flags.Length > 1 && Int32.TryParse(flags[1], out int code))
-				{
-					ErrorCode = code;
-				}
-			}
-			else
-			{
-				throw new InvalidResponseException();
-			}
+			return Identifier;
 		}
 	}
 }

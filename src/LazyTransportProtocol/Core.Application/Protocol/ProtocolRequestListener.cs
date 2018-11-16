@@ -1,6 +1,7 @@
 ﻿using LazyTransportProtocol.Core.Application.Infrastructure;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
+using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Metadata;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
@@ -96,70 +97,63 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 				requestString = requestString.Replace("<EOF>", "");
 
-				IProtocolResponse protocolResponse = null;
-
 				if (state.ProtocolState == null)
 				{
-					var headers = new Dictionary<string, string>()
-					{
-						{ HandshakeValuesMetadata.ControlSeparator, ";" }
-					};
+					ProtocolVersion handshakeProtocol = ProtocolVersion.Handshake;
 
-					MediumDeserializedRequestObject requestObject = RequestDeserializeHelper.DeserializeRequestString(requestString, headers, ProtocolVersion.Handshake);
+					// Temporary headers for handshake
+					AgreedHeadersDictionary handshakeHeaders = new AgreedHeadersDictionary(";", handshakeProtocol);
+					MediumDeserializedObject requestObject = DeserializeHelper.DeserializeRequestString(requestString, handshakeHeaders, handshakeProtocol);
 
-					HandshakeRequest request = new HandshakeRequest();
-					request.Deserialize(requestObject, ProtocolVersion.Handshake);
+					HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
 					var response = new ProtocolRequestExecutor().Execute(request);
 
 					if (response.IsSuccessful)
 					{
 						state.ProtocolState = new ProtocolState
 						{
-							ProtocolVersion = request.ProtocolVersion,
-							Separator = request.Separator
+							AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.ProtocolVersion)
 						};
 					}
 
-					protocolResponse = response;
+					string responseBody = ProtocolBodySerializer.Serialize(response, handshakeProtocol);
+					string serializedResponse = SerializeHelper.SerializeRequestString(response.GetIdentifier(handshakeProtocol), responseBody, handshakeHeaders, handshakeProtocol);
 
-					Send(state, protocolResponse.Serialize(ProtocolVersion.Handshake));
+					Send(state, serializedResponse);
 				}
 				else
 				{
 					ProtocolState connectionState = (ProtocolState)state.ProtocolState;
+					ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
 
-					Dictionary<string, string> headers = new Dictionary<string, string>
-					{
-						{ HandshakeValuesMetadata.ControlSeparator, connectionState.Separator },
-						{ HandshakeValuesMetadata.ProtocolVersion, connectionState.ProtocolVersion.ToString() }
-					};
-
-					MediumDeserializedRequestObject requestObject = RequestDeserializeHelper.DeserializeRequestString(requestString, headers, connectionState.ProtocolVersion);
+					MediumDeserializedObject requestObject = DeserializeHelper.DeserializeRequestString(requestString, connectionState.AgreedHeaders, protocolVersion);
 					ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
+
+					IProtocolResponse protocolResponse = null;
+					IRequest<IResponse> request = null;
 
 					switch (requestObject.ControlCommand)
 					{
 						case CreateUserRequest.Identifier:
-							protocolResponse = GetResponse(new CreateUserRequest());
+							request = ProtocolBodyDeserializer.Deserialize<CreateUserRequest>(requestObject.Body, protocolVersion);
+							protocolResponse = (IProtocolResponse)executor.Execute(request);
 							break;
 
 						case AuthenticationRequest.Identifier:
-							protocolResponse = GetResponse(new AuthenticationRequest());
+							request = ProtocolBodyDeserializer.Deserialize<AuthenticationRequest>(requestObject.Body, protocolVersion);
+							protocolResponse = (IProtocolResponse)executor.Execute(request);
 							break;
 
 						case ListDirectoryClientRequest.Identifier:
-							protocolResponse = GetResponse(new ListDirectoryClientRequest());
+							request = ProtocolBodyDeserializer.Deserialize<ListDirectoryClientRequest>(requestObject.Body, protocolVersion);
+							protocolResponse = (IProtocolResponse)executor.Execute(request);
 							break;
 					}
 
-					IProtocolResponse GetResponse<TResponse>(IProtocolRequest<TResponse> request)
-						where TResponse : class, IProtocolResponse, new()
-					{
-						request.Deserialize(requestObject, connectionState.ProtocolVersion);
-						return (IProtocolResponse)executor.Execute(request);
-					}
+					string serializedBody = ProtocolBodySerializer.Serialize(protocolResponse, protocolVersion);
+					string serializedResponse = SerializeHelper.SerializeRequestString(protocolResponse.GetIdentifier(protocolVersion), serializedBody, connectionState.AgreedHeaders, protocolVersion);
 
-					Send(state, protocolResponse.Serialize(connectionState.ProtocolVersion));
+					Send(state, serializedResponse);
 				}
 			}
 			else

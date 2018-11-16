@@ -50,6 +50,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			return response.IsSuccessful;
 		}
 
+		public void ListDirectory(string path)
+		{
+			var response = remoteExecutor.Execute(new ListDirectoryClientRequest
+			{
+				Path = "/"
+			});
+
+			Console.WriteLine(String.Join(", ", response.RemoteDirectories));
+		}
+
 		public void Disconnect()
 		{
 			remoteExecutor.Disconnect();
