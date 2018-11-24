@@ -1,4 +1,5 @@
 ﻿using LazyTransportProtocol.Client.Exceptions;
+using LazyTransportProtocol.Client.Helpers;
 using LazyTransportProtocol.Client.Metadata;
 using LazyTransportProtocol.Client.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Flow;
@@ -50,6 +51,8 @@ namespace LazyTransportProtocol.Client.Services
 						Argument.Create(lsPathAssignment, "-p", "-path"),
 						Argument.Create(lsPathAssignment, 0)))
 				.Execute;
+
+			_commandDictionary[CommandNameMetadata.Authenticate] = new ArgumentClientInput<AuthenticateClientInputModel>(model => _clientFlowService.ListDirectory(model.Path))
 
 			_commandDictionary[CommandNameMetadata.Authenticate] = AuthenticateHandler;
 			_commandDictionary[CommandNameMetadata.Connect] = ConnectHandler;
@@ -190,7 +193,7 @@ namespace LazyTransportProtocol.Client.Services
 			else
 			{
 				Console.Write("Password: ");
-				password = ReadSecureString();
+				password = ConsoleHelper.ReadSecureString();
 			}
 		}
 
@@ -223,89 +226,6 @@ namespace LazyTransportProtocol.Client.Services
 		private void DeleteUserHandler(string[] parameters)
 		{
 
-		}
-
-		private void DownloadFileHandler(string[] parameters)
-		{
-			string remoteFilepath = parameters[0];
-			string localFilepath = parameters[1];
-
-			_clientFlowService.DownloadFile(remoteFilepath, localFilepath);
-		}
-
-		private void ListDirectory(string[] parameters)
-		{
-			string path;
-
-			if (parameters.Length > 0)
-			{
-				path = parameters[0];
-			}
-			else
-			{
-				throw new CommandException("Insufficient parameters.");
-			}
-
-			_clientFlowService.ListDirectory(path);
-		}
-
-		private void ChangeDirectory(string[] parameters)
-		{
-			string path;
-
-			if (parameters.Length > 0)
-			{
-				path = parameters[0];
-			}
-			else
-			{
-				throw new CommandException("Insufficient parameters.");
-			}
-
-			_clientFlowService.ListDirectory(path);
-		}
-
-		private string ReadSecureString()
-		{
-			StringBuilder sb = new StringBuilder();
-
-			ConsoleKeyInfo key;
-
-			while (true)
-			{
-				key = Console.ReadKey(true);
-
-				if (key.Key == ConsoleKey.Enter)
-				{
-					Console.WriteLine();
-					break;
-				}
-				else if (key.Key == ConsoleKey.Backspace)
-				{
-					if (sb.Length > 0)
-					{
-						Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-						Console.Write(' ');
-						Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-
-						if (sb.Length > 1)
-						{
-							sb.Remove(sb.Length - 2, 1);
-						}
-						else
-						{
-							sb.Remove(0, 1);
-						}
-					}
-				}
-				else
-				{
-					Console.Write('*');
-					sb.Append(key.KeyChar);
-				}
-			}
-
-			return sb.ToString();
 		}
 	}
 }
