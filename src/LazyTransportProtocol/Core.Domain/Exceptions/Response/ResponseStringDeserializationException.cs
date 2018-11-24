@@ -4,7 +4,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Domain.Exceptions.Response
 {
-	public class InvalidResponseException : CustomException
+	public class ResponseStringDeserializationException : InvalidResponseException
 	{
 	}
 }

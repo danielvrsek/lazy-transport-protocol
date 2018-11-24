@@ -13,7 +13,19 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 
 		public IPipelineBuilder<TRequest> AddPipelineAction(Action<TRequest> pipelineAction)
 		{
-			basicPipelineQueue.AddToQueue(pipelineAction);
+			basicPipelineQueue.AddToQueue((request) =>
+			{
+				pipelineAction(request);
+
+				return request;
+			});
+
+			return this;
+		}
+
+		public IPipelineBuilder<TRequest> AddPipelineFunction(Func<TRequest, TRequest> pipelineFunc)
+		{
+			basicPipelineQueue.AddToQueue(pipelineFunc);
 
 			return this;
 		}

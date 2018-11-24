@@ -1,5 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Configuration;
-using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
+﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;

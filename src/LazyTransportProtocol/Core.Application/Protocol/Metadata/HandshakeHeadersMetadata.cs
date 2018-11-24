@@ -7,5 +7,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Metadata
 		public const string ControlSeparator = "control-separator";
 
 		public const string ProtocolVersion = "protocol-version";
+
+		public const string MaxRequestLength = "max-request-length";
 	}
 }

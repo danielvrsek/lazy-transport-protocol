@@ -1,8 +1,7 @@
 ﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
+using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
-using LazyTransportProtocol.Core.Transport.Infrastructure;
-using System;
 using System.Net;
 using System.Net.Sockets;
 

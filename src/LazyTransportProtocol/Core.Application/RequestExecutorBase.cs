@@ -23,9 +23,11 @@ namespace LazyTransportProtocol.Core.Application
 
 			lock (_lock)
 			{
+				// Register delegate - don't execute
 				_requestHandlerDictionary[typeof(TRequest)] = (request) =>
 				{
-					requestPipelineBuilder.Build().ExecutePipelineQueue((TRequest)request);
+					// Execute pipeline
+					request = requestPipelineBuilder.Build().ExecutePipelineQueue((TRequest)request);
 
 					return requestHandler.GetResponse((TRequest)request);
 				};
@@ -55,14 +57,14 @@ namespace LazyTransportProtocol.Core.Application
 		public virtual Task<TResponse> ExecuteAsync<TResponse>(IRequest<TResponse> request)
 			where TResponse : class, IResponse
 		{
-			return Task.Factory.StartNew<TResponse>((r) => (TResponse)Execute((IRequest<TResponse>)r), request);
+			return Task.Factory.StartNew((r) => Execute((IRequest<TResponse>)r), request);
 		}
 
 		public abstract void Register();
 
 		bool IRequestExecutor.CanExecute<TResponse>(IRequest<TResponse> request)
 		{
-			throw new NotImplementedException();
+			return _requestHandlerDictionary.ContainsKey(request.GetType());
 		}
 	}
 }

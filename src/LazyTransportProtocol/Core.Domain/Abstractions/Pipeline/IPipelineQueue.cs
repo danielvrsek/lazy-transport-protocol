@@ -8,6 +8,6 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions.Pipeline
 {
 	public interface IPipelineQueue<T>
 	{
-		void ExecutePipelineQueue(T request);
+		T ExecutePipelineQueue(T request);
 	}
 }

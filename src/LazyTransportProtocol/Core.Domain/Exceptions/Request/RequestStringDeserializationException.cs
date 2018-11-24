@@ -4,7 +4,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Domain.Exceptions.Request
 {
-	public class ChunkTypeDeserializationException : InvalidRequestException
+	public class RequestStringDeserializationException : InvalidRequestException
 	{
 	}
 }

@@ -10,5 +10,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Services
 		UserSecret GetSecretForUsername(string username);
 
 		UserSecret InsertNewSercret(UserSecret secretInfo);
+
+		UserSecret ModifySecret(UserSecret userSecret);
+
+		void DeleteSecret(string username);
 	}
 }

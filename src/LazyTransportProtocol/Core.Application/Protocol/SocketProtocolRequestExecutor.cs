@@ -1,8 +1,10 @@
 ﻿using LazyTransportProtocol.Core.Application.Infrastructure;
+using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Metadata;
+using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
@@ -10,12 +12,13 @@ using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Protocol
 {
-	public class RemoteProtocolRequestExecutor : IRemoteRequestExecutor
+	public class SocketProtocolRequestExecutor : IRemoteRequestExecutor
 	{
 		private IConnection _connection;
 
@@ -25,13 +28,20 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		private const string _separator = ";";
 		private readonly ProtocolVersion _protocolVersion = ProtocolVersion.V1_0;
+		private const int _maxRequestLength = 16384;
 
-		public void Connect(string ipAdress, int port)
+		public void Connect(IRemoteConnectionParameters parameters)
 		{
-			_connection = _transport.Connect(ipAdress, port);
+			Connect((SocketConnectionParameters)parameters);
+		}
+
+		public void Connect(SocketConnectionParameters parameters)
+		{
+			_connection = _transport.Connect(parameters.IPAddress, parameters.Port);
 			_connection.State = new ProtocolState
 			{
-				AgreedHeaders = new AgreedHeadersDictionary(";", ProtocolVersion.Handshake)
+				// handshake
+				AgreedHeaders = new AgreedHeadersDictionary(";", 1024, ProtocolVersion.Handshake)
 			};
 
 			AcknowledgementResponse response = Execute(new HandshakeRequest
@@ -42,7 +52,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 			ProtocolState state = (ProtocolState)_connection.State;
 
-			state.AgreedHeaders = new AgreedHeadersDictionary(_separator, _protocolVersion);
+			state.AgreedHeaders = new AgreedHeadersDictionary(_separator, maxRequestLength, _protocolVersion);
 		}
 
 		public TResponse Execute<TResponse>(IProtocolRequest<TResponse> request)
@@ -50,15 +60,18 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		{
 			ProtocolState state = (ProtocolState)_connection.State;
 
-			string requestBody = ProtocolBodySerializer.Serialize(request, state.AgreedHeaders.ProtocolVersion);
-			string requestString = SerializeHelper.SerializeRequestString(request.GetIdentifier(state.AgreedHeaders.ProtocolVersion), requestBody, state.AgreedHeaders);
+			MessageHeadersDictionary headers = new MessageHeadersDictionary();
 
-			string requestDecoded = requestString + "<EOF>";
-			byte[] requestEncoded = _encoder.Encode(requestDecoded);
+			string requestHeaders = new ProtocolMessageHeaderSerializer().Serialize(headers, state.AgreedHeaders.ProtocolVersion);
+			string requestBody = new ProtocolBodySerializer().Serialize(request, state.AgreedHeaders.ProtocolVersion);
+			string requestIdentifier = request.GetIdentifier(state.AgreedHeaders.ProtocolVersion);
+			string requestString = new ProtocolSerializer().Serialize(requestIdentifier, requestHeaders, requestBody, state.AgreedHeaders);
+
+			byte[] requestEncoded = _encoder.Encode(requestString + "<EOF>");
 			byte[] responseEncoded = _connection.Send(requestEncoded);
 			string responseDecoded = _decoder.Decode(responseEncoded);
 
-			var requestObject = DeserializeHelper.DeserializeRequestString(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
+			var requestObject = new ProtocolDeserializer().Deserialize(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
 			TResponse response = ProtocolBodyDeserializer.Deserialize<TResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
 
 			return response;
@@ -67,7 +80,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		public Task<TResponse> ExecuteAsync<TResponse>(IProtocolRequest<TResponse> request)
 			where TResponse : class, IProtocolResponse, new()
 		{
-			throw new System.NotImplementedException();
+			throw new NotImplementedException();
 		}
 
 		public void Disconnect()

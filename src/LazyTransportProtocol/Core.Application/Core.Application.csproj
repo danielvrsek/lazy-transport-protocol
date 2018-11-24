@@ -6,11 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Protocol\Commands\" />
-    <Folder Include="Protocol\Flows\Handshake\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 

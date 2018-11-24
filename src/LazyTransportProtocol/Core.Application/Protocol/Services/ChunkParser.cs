@@ -1,5 +1,5 @@
 ﻿using LazyTransportProtocol.Core.Application.Protocol.Model;
-using LazyTransportProtocol.Core.Domain.Exceptions;
+using LazyTransportProtocol.Core.Domain.Exceptions.Request;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ChunkParser
 	{
-		public static Chunk Parse(string value)
+		private readonly Dictionary<ChunkTypeEnum, char> _chunkIdentifierDictionary = new Dictionary<ChunkTypeEnum, char>();
+
+		public ChunkParser()
+		{
+			_chunkIdentifierDictionary[ChunkTypeEnum.Start] = 'S';
+			_chunkIdentifierDictionary[ChunkTypeEnum.Part] = 'P';
+			_chunkIdentifierDictionary[ChunkTypeEnum.End] = 'E';
+		}
+
+		public Chunk Parse(string value)
 		{
 			string[] flags = value.Split(" ").Where(x => !String.IsNullOrWhiteSpace(x)).ToArray();
 
@@ -47,21 +56,15 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			};
 		}
 
-		public static ChunkTypeEnum ParseChunkType(char type)
+		public ChunkTypeEnum ParseChunkType(char type)
 		{
-			switch (type)
+			try
 			{
-				case 'S':
-					return ChunkTypeEnum.Start;
-
-				case 'P':
-					return ChunkTypeEnum.Part;
-
-				case 'E':
-					return ChunkTypeEnum.End;
-
-				default:
-					throw new ChunkTypeDeserializationException();
+				return _chunkIdentifierDictionary.Single(kvp => kvp.Value == type).Key;
+			}
+			catch
+			{
+				throw new ChunkTypeDeserializationException();
 			}
 		}
 	}

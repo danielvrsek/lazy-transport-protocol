@@ -7,11 +7,10 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Pipeline
 {
-	public class RequestExceptionContext<TRequest> : IPipelineExceptionContext<TRequest>
-		where TRequest : IRequest<IResponse>
+	public class PipelineExceptionContext<T> : IPipelineExceptionContext<T>
 	{
 		public Exception Exception { get; set; }
 
-		public TRequest Request { get; set; }
+		public T Request { get; set; }
 	}
 }

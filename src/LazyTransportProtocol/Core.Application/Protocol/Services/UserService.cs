@@ -15,17 +15,23 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			return secretAccessor.InsertNewSercret(userSecret);
 		}
 
+		public UserSecret Modify(UserSecret userSecret)
+		{
+			IUserSecretAccessor secretAccessor = new UserSecretAccessor();
+
+			secretAccessor.ModifySecret(userSecret);
+
+			return userSecret;
+		}
+
 		public void Delete(string username)
 		{
-			throw new NotImplementedException();
+			IUserSecretAccessor secretAccessor = new UserSecretAccessor();
+
+			secretAccessor.DeleteSecret(username);
 		}
 
 		public bool Exists(string username)
-		{
-			throw new NotImplementedException();
-		}
-
-		public UserSecret Modify(UserSecret userSecret)
 		{
 			throw new NotImplementedException();
 		}

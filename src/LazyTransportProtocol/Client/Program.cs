@@ -1,9 +1,13 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol;
+﻿using LazyTransportProtocol.Client.Exceptions;
+using LazyTransportProtocol.Client.Services;
+using LazyTransportProtocol.Core.Application.Protocol;
 using LazyTransportProtocol.Core.Application.Protocol.Flow;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
+using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,28 +18,38 @@ namespace LazyTransportProtocol.Client
 	{
 		private static void Main(string[] args)
 		{
-			ProtocolConnectionFlowService flowService = new ProtocolConnectionFlowService();
+			ClientInputService clientInputService = new ClientInputService();
 
-			Console.WriteLine("Connecting...");
-			flowService.Connect();
+			Console.WriteLine("LazyTransportProtocol client v0.1");
+			Console.WriteLine();
 
-			Console.WriteLine("Authenticating...");
-			if (flowService.Authenticate("vrsek", "1234"))
+			string commandRequest;
+
+			while (true)
 			{
-				Console.WriteLine("Authentication successful.");
+				Console.Write('>');
+				commandRequest = Console.ReadLine();
+
+				if (commandRequest == "exit")
+				{
+					break;
+				}
+
+				try
+				{
+					clientInputService.Execute(commandRequest);
+				}
+				catch (InvalidCommandException commandException)
+				{
+					Console.WriteLine(commandException.Message);
+				}
+				catch
+				{
+					Console.WriteLine("Unexpected error occured. Exiting...");
+					Console.ReadLine();
+					break;
+				}
 			}
-			else
-			{
-				Console.WriteLine("Authentication unsuccessful.");
-				Console.WriteLine("Creating new user...");
-
-				flowService.CreateNewUser("vrsek", "1234");
-			}
-
-			flowService.ListDirectory("/");
-
-			Console.WriteLine("Disconnecting...");
-			flowService.Disconnect();
 		}
 	}
 }

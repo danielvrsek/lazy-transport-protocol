@@ -10,6 +10,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			Register(new AuthenticationRequestHandler());
 			Register(new ListDirectoryRequestHandler());
 			Register(new CreateUserRequestHandler());
+			Register(new DeleteUserRequestHandler());
+			Register(new DownloadFileHandler());
 		}
 	}
 }

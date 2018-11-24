@@ -6,8 +6,10 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Configuration
 {
 	public static class ServerConfiguration
 	{
-		public static string UserSecretFilePath = "";
+		public const string RootFolder = "";
 
-		public static string UserSecretFilename = "secrets";
+		public const string UserSecretFilePath = "";
+
+		public const string UserSecretFilename = "secrets";
 	}
 }

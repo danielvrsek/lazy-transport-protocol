@@ -6,35 +6,40 @@ using System.Collections.Generic;
 
 namespace LazyTransportProtocol.Core.Application.Pipeline
 {
-	public class BasicPipelineQueue<TRequest> : IPipelineQueue<TRequest>
-		where TRequest : IRequest<IResponse>
+	/// <summary>
+	/// Default implemntation of the <see cref="IPipelineBuilder{T}"/>
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	public class BasicPipelineQueue<T> : IPipelineQueue<T>
 	{
 		private readonly object _lock = new object();
 
-		private List<Action<TRequest>> _pipelineActions = new List<Action<TRequest>>();
+		private List<Func<T, T>> _pipelineFuncs = new List<Func<T, T>>();
 
-		private Action<RequestExceptionContext<TRequest>> _onExceptionAction = null;
+		private Action<PipelineExceptionContext<T>> _onExceptionAction = null;
 
-		public void AddToQueue(Action<TRequest> pipelineAction)
+		public void AddToQueue(Func<T, T> pipelineFunc)
 		{
 			lock (_lock)
 			{
-				_pipelineActions.Add(pipelineAction);
+				_pipelineFuncs.Add(pipelineFunc);
 			}
 		}
 
-		public void ExecutePipelineQueue(TRequest request)
+		public T ExecutePipelineQueue(T request)
 		{
 			try
 			{
-				foreach (Action<TRequest> action in _pipelineActions)
+				foreach (Func<T, T> func in _pipelineFuncs)
 				{
-					action(request);
+					request = func(request);
 				}
+
+				return request;
 			}
 			catch (Exception e)
 			{
-				_onExceptionAction?.Invoke(new RequestExceptionContext<TRequest>
+				_onExceptionAction?.Invoke(new PipelineExceptionContext<T>
 				{
 					Exception = e,
 					Request = request
@@ -43,7 +48,7 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 			}
 		}
 
-		public void OnError(Action<RequestExceptionContext<TRequest>> action)
+		public void OnError(Action<PipelineExceptionContext<T>> action)
 		{
 			_onExceptionAction = action;
 		}

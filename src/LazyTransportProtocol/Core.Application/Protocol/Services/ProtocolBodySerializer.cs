@@ -10,20 +10,20 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
-	public static class ProtocolBodySerializer
+	public class ProtocolBodySerializer
 	{
-		public static string Serialize<TResponse>(IProtocolRequest<TResponse> request, ProtocolVersion protocolVersion)
+		public string Serialize<TResponse>(IProtocolRequest<TResponse> request, ProtocolVersion protocolVersion)
 			where TResponse : class, IProtocolResponse, new()
 		{
 			return SerializeInternal(request);
 		}
 
-		public static string Serialize(IProtocolResponse response, ProtocolVersion protocolVersion)
+		public string Serialize(IProtocolResponse response, ProtocolVersion protocolVersion)
 		{
 			return SerializeInternal(response);
 		}
 
-		private static string SerializeInternal<T>(T obj)
+		private string SerializeInternal<T>(T obj)
 		{
 			if (obj == null)
 			{

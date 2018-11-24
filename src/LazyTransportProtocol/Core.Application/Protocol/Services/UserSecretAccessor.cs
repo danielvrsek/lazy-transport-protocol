@@ -59,6 +59,36 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			return secretInfo;
 		}
 
+		public void DeleteSecret(string username)
+		{
+			EnsureFileExists();
+
+			string[] lines;
+
+			using (StreamReader sr = new StreamReader(FullPath))
+			{
+				lines = sr.ReadToEnd().Split(Environment.NewLine);
+			}
+
+			string[] newLines = lines.Where(x => !x.StartsWith(username)).ToArray();
+
+			using (StreamWriter sw = new StreamWriter(FullPath, false))
+			{
+				foreach(string line in newLines)
+				{
+					sw.WriteLine(line);
+				}
+			}
+		}
+
+		public UserSecret ModifySecret(UserSecret userSecret)
+		{
+			DeleteSecret(userSecret.Username);
+			InsertNewSercret(userSecret);
+
+			return userSecret;
+		}
+
 		#endregion Public members
 
 		#region Private members

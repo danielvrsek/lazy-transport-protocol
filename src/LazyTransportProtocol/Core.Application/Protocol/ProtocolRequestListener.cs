@@ -3,6 +3,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Metadata;
+using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
@@ -67,104 +68,147 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			};
 
 			handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-				new AsyncCallback(OnDataReceived), state);
+			new AsyncCallback(OnDataReceived), state);
 		}
 
 		public static void OnDataReceived(IAsyncResult ar)
 		{
-			IDecoder decoder = new ProtocolDecoder();
-
-			StateObject state = (StateObject)ar.AsyncState;
-			Socket handler = state.WorkSocket;
-
-			int bytesRead = handler.EndReceive(ar);
-
-			if (bytesRead == 0)
+			try
 			{
-				return;
-			}
+				IDecoder decoder = new ProtocolDecoder();
 
-			string decoded = decoder.Decode(state.Buffer, 0, bytesRead);
-			state.StringBuilder.Append(decoded);
+				StateObject state = (StateObject)ar.AsyncState;
+				Socket handler = state.WorkSocket;
 
-			string requestString = state.StringBuilder.ToString();
+				int bytesRead = handler.EndReceive(ar);
 
-			if (requestString.IndexOf("<EOF>") > -1)
-			{
-				// All the data has been read
-				Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-					requestString.Length, requestString);
-
-				requestString = requestString.Replace("<EOF>", "");
-
-				if (state.ProtocolState == null)
+				if (bytesRead == 0)
 				{
-					ProtocolVersion handshakeProtocol = ProtocolVersion.Handshake;
+					return;
+				}
 
-					// Temporary headers for handshake
-					AgreedHeadersDictionary handshakeHeaders = new AgreedHeadersDictionary(";", handshakeProtocol);
-					MediumDeserializedObject requestObject = DeserializeHelper.DeserializeRequestString(requestString, handshakeHeaders, handshakeProtocol);
+				string decoded = decoder.Decode(state.Buffer, 0, bytesRead);
+				state.StringBuilder.Append(decoded);
 
-					HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
-					var response = new ProtocolRequestExecutor().Execute(request);
+				string requestString = state.StringBuilder.ToString();
 
-					if (response.IsSuccessful)
+				if (requestString.IndexOf("<EOF>") > -1)
+				{
+					// All the data has been read
+					Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
+						requestString.Length, requestString);
+
+					requestString = requestString.Replace("<EOF>", "");
+
+					string serializedResponse;
+
+					if (state.ProtocolState == null)
 					{
-						state.ProtocolState = new ProtocolState
-						{
-							AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.ProtocolVersion)
-						};
-					}
+						// First client's request. Hanshake expected
+						serializedResponse = BeginHandshake(requestString, state);
 
-					string responseBody = ProtocolBodySerializer.Serialize(response, handshakeProtocol);
-					string serializedResponse = SerializeHelper.SerializeRequestString(response.GetIdentifier(handshakeProtocol), responseBody, handshakeHeaders, handshakeProtocol);
+						state.Buffer
+					}
+					else
+					{
+						serializedResponse = HandleRequest(requestString, (ProtocolState)state.ProtocolState);
+					}
 
 					Send(state, serializedResponse);
 				}
 				else
 				{
-					ProtocolState connectionState = (ProtocolState)state.ProtocolState;
-					ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
-
-					MediumDeserializedObject requestObject = DeserializeHelper.DeserializeRequestString(requestString, connectionState.AgreedHeaders, protocolVersion);
-					ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
-
-					IProtocolResponse protocolResponse = null;
-					IRequest<IResponse> request = null;
-
-					switch (requestObject.ControlCommand)
-					{
-						case CreateUserRequest.Identifier:
-							request = ProtocolBodyDeserializer.Deserialize<CreateUserRequest>(requestObject.Body, protocolVersion);
-							protocolResponse = (IProtocolResponse)executor.Execute(request);
-							break;
-
-						case AuthenticationRequest.Identifier:
-							request = ProtocolBodyDeserializer.Deserialize<AuthenticationRequest>(requestObject.Body, protocolVersion);
-							protocolResponse = (IProtocolResponse)executor.Execute(request);
-							break;
-
-						case ListDirectoryClientRequest.Identifier:
-							request = ProtocolBodyDeserializer.Deserialize<ListDirectoryClientRequest>(requestObject.Body, protocolVersion);
-							protocolResponse = (IProtocolResponse)executor.Execute(request);
-							break;
-					}
-
-					string serializedBody = ProtocolBodySerializer.Serialize(protocolResponse, protocolVersion);
-					string serializedResponse = SerializeHelper.SerializeRequestString(protocolResponse.GetIdentifier(protocolVersion), serializedBody, connectionState.AgreedHeaders, protocolVersion);
-
-					Send(state, serializedResponse);
+					// Not all data received. Get more.
+					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
+						new AsyncCallback(OnDataReceived), state);
 				}
 			}
-			else
+			catch (Exception e)
 			{
-				// Not all data received. Get more.
-				handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-					new AsyncCallback(OnDataReceived), state);
+				Console.WriteLine(e.Message);
 			}
 		}
 
-		private static void Send(StateObject state, String data)
+		private static string BeginHandshake(string requestString, StateObject state)
+		{
+			ProtocolVersion handshakeProtocol = ProtocolVersion.Handshake;
+
+			// Default headers for handshake
+			AgreedHeadersDictionary handshakeHeaders = new AgreedHeadersDictionary(";", 1024, handshakeProtocol);
+			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
+			MediumDeserializedObject requestObject = new ProtocolDeserializer().Deserialize(requestString, handshakeHeaders, handshakeProtocol);
+
+			HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
+			var response = new ProtocolRequestExecutor().Execute(request);
+
+			if (response.IsSuccessful)
+			{
+				state.ProtocolState = new ProtocolState
+				{
+					AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.MaxRequestLength, request.ProtocolVersion)
+				};
+
+				state.Buffer = new byte[request.MaxRequestLength];
+			}
+
+			string identifier = response.GetIdentifier(handshakeProtocol);
+			string headers = new ProtocolMessageHeaderSerializer().Serialize(responseHeaders, handshakeProtocol);
+			string responseBody = new ProtocolBodySerializer().Serialize(response, handshakeProtocol);
+			string serializedResponse = new ProtocolSerializer().Serialize(identifier, headers, responseBody, handshakeHeaders);
+
+			return serializedResponse;
+		}
+
+		private static string HandleRequest(string requestString, ProtocolState connectionState)
+		{
+			ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
+
+			MessageHeadersDictionary requestHeaders = new MessageHeadersDictionary();
+			MediumDeserializedObject requestObject = new ProtocolDeserializer().Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
+			ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
+
+			IProtocolResponse protocolResponse = null;
+			IRequest<IResponse> request = null;
+
+			switch (requestObject.ControlCommand)
+			{
+				case CreateUserRequest.Identifier:
+					Deserialize<CreateUserRequest>();
+					break;
+
+				case DeleteUserRequest.Identifier:
+					Deserialize<DeleteUserRequest>();
+					break;
+
+				case AuthenticationRequest.Identifier:
+					Deserialize<AuthenticationRequest>();
+					break;
+
+				case ListDirectoryClientRequest.Identifier:
+					Deserialize<ListDirectoryClientRequest>();
+					break;
+
+				case DownloadFileRequest.Identifier:
+					Deserialize<DownloadFileRequest>();
+					break;
+			}
+
+			void Deserialize<TRequest>()
+				where TRequest : IRequest<IResponse>
+			{
+				request = ProtocolBodyDeserializer.Deserialize<TRequest>(requestObject.Body, protocolVersion);
+				protocolResponse = (IProtocolResponse)executor.Execute(request);
+			}
+
+			string identifier = protocolResponse.GetIdentifier(protocolVersion);
+			string headers = new ProtocolMessageHeaderSerializer().Serialize(requestHeaders, protocolVersion);
+			string serializedBody = new ProtocolBodySerializer().Serialize(protocolResponse, protocolVersion);
+			string serializedResponse = new ProtocolSerializer().Serialize(identifier, headers, serializedBody, connectionState.AgreedHeaders);
+
+			return serializedResponse;
+		}
+
+		private static void Send(StateObject state, string data)
 		{
 			IEncoder encoder = new ProtocolEncoder();
 
@@ -187,7 +231,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				if (state.ProtocolState != null)
 				{
 					state.StringBuilder.Clear();
-					handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
+					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
 						new AsyncCallback(OnDataReceived), state);
 				}
 				else
@@ -205,11 +249,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		public class StateObject
 		{
-			public const int BufferSize = 1024;
-
 			public Socket WorkSocket { get; set; }
 
-			public byte[] Buffer { get; } = new byte[BufferSize];
+			public byte[] Buffer { get; set; } = new byte[1024];
 
 			public StringBuilder StringBuilder { get; } = new StringBuilder();
 

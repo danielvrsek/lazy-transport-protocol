@@ -6,7 +6,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Model
 {
-	public class RemoteDirectory : IComplexParameter
+	public class RemoteDirectory
 	{
 		public string Name { get; set; }
 

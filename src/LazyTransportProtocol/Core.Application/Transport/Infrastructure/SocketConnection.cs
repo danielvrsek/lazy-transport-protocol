@@ -1,11 +1,9 @@
-﻿using LazyTransportProtocol.Core.Application.Transport;
-using LazyTransportProtocol.Core.Application.Transport.Abstractions;
-using LazyTransportProtocol.Core.Application.Transport.Requests;
+﻿using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using System;
 using System.Net.Sockets;
 
-namespace LazyTransportProtocol.Core.Transport.Infrastructure
+namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 {
 	public class SocketConnection : IConnection
 	{

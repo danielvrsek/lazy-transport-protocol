@@ -13,9 +13,10 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Infrastucture
 		{
 		}
 
-		public AgreedHeadersDictionary(string separator, ProtocolVersion protocolVersion)
+		public AgreedHeadersDictionary(string separator, int maxRequestLength, ProtocolVersion protocolVersion)
 		{
 			this[HandshakeHeadersMetadata.ControlSeparator] = separator;
+			this[HandshakeHeadersMetadata.MaxRequestLength] = maxRequestLength.ToString();
 			this[HandshakeHeadersMetadata.ProtocolVersion] = protocolVersion.ToString();
 		}
 
@@ -24,6 +25,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Infrastucture
 			get
 			{
 				return this[HandshakeHeadersMetadata.ControlSeparator];
+			}
+		}
+
+		public int MaxRequestLength
+		{
+			get
+			{
+				return Int32.Parse(this[HandshakeHeadersMetadata.MaxRequestLength]);
 			}
 		}
 

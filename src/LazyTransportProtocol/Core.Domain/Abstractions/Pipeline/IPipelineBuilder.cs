@@ -9,6 +9,8 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions.Pipeline
 	{
 		IPipelineBuilder<T> AddPipelineAction(Action<T> pipelineAction);
 
+		IPipelineBuilder<T> AddPipelineFunction(Func<T, T> pipelineFunc);
+
 		IPipelineBuilder<T> OnException(Action<IPipelineExceptionContext<T>> action);
 
 		IPipelineBuilder<T> AddValidator(IPipelineValidator<T> validator);
