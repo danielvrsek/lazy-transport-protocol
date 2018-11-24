@@ -6,22 +6,34 @@ using System.Text;
 
 namespace LazyTransportProtocol.Client.Model
 {
+	public static class Argument
+	{
+		public static Argument<TModel> Create<TModel>(Action<string, TModel> assignAction, params string[] argumentNames)
+		{
+			return new Argument<TModel>(assignAction, argumentNames);
+		}
+
+		public static Argument<TModel> Create<TModel>(Action<string, TModel> assignAction, int index)
+		{
+			return new Argument<TModel>(assignAction, index);
+		}
+	}
+
 	public class Argument<TModel> : IArgument<TModel>
 	{
-		private readonly string _argumentName = null;
+		private readonly string[] _argumentNames = null;
 		private readonly int _index = -1;
 
 		private Action<string, TModel> _assignAction;
-
 		private Action<TModel> _onEmpty;
 
-		public Argument(string argumentName, Action<string, TModel> assignAction)
+		public Argument(Action<string, TModel> assignAction, params string[] argumentNames)
 		{
-			_argumentName = argumentName;
+			_argumentNames = argumentNames.ToArray();
 			_assignAction = assignAction;
 		}
 
-		public Argument(int index, Action<string, TModel> assignAction)
+		public Argument(Action<string, TModel> assignAction, int index)
 		{
 			_index = index;
 			_assignAction = assignAction;
@@ -44,13 +56,13 @@ namespace LazyTransportProtocol.Client.Model
 					_assignAction(parameters[_index], model);
 				}
 			}
-			else if (_argumentName != null)
+			else if (_argumentNames != null && _argumentNames.Length > 0)
 			{
 				int argumentIndex = -1;
 
 				for (int i = 0; i < parameters.Length; i++)
 				{
-					if (parameters[i] == _argumentName)
+					if (_argumentNames.Any(x => x == parameters[i]))
 					{
 						argumentIndex = i;
 						break;
@@ -79,7 +91,7 @@ namespace LazyTransportProtocol.Client.Model
 			return false;
 		}
 
-		public void PromtIfEmpty(string title, bool secure = false)
+		public Argument<TModel> PromtIfEmpty(string title, bool secure = false)
 		{
 			_onEmpty = model =>
 			{
@@ -87,14 +99,18 @@ namespace LazyTransportProtocol.Client.Model
 				string value = secure ? ReadSecureString() : Console.ReadLine();
 				_assignAction(value, model);
 			};
+
+			return this;
 		}
 
-		public void SetDefaultValue(string defaultValue)
+		public Argument<TModel> SetDefaultValue(string defaultValue)
 		{
 			_onEmpty = model =>
 			{
 				_assignAction(defaultValue, model);
 			};
+
+			return this;
 		}
 
 		private bool IsArgument(string value)

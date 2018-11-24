@@ -93,6 +93,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			}
 		}
 
+		public void ChangeDirectory(string path)
+		{
+			throw new NotImplementedException();
+		}
+
 		public void Disconnect()
 		{
 			remoteExecutor.Disconnect();

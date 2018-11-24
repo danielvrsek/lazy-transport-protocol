@@ -18,22 +18,43 @@ namespace LazyTransportProtocol.Client.Services
 
 		public ClientInputService()
 		{
-			
-				
+			Action<string, DownloadFileClientInputModel> localFileAssignment = (param, model) => model.LocalFile = param;
+			Action<string, DownloadFileClientInputModel> remoteFileAssignment = (param, model) => model.RemoteFile = param;
+			Action<string, ChangeDirectoryClientInputModel> cdPathAssignment = (param, model) => model.Path = param;
+			Action<string, ListDirectoryClientInputModel> lsPathAssignment = (param, model) => model.Path = param;
 
-			_commandDictionary[CommandNameMetadata.Download] = ArgumentCondition.Or(
+
+			_commandDictionary[CommandNameMetadata.Download] = new ArgumentClientInput<DownloadFileClientInputModel>(model => _clientFlowService.DownloadFile(model.LocalFile, model.RemoteFile))
+				.RegisterArgument(
 					ArgumentCondition.Or(
-						new Argument<DownloadFileClientInputModel>("l", (param, model) => model.LocalFile = param),
-						new Argument<DownloadFileClientInputModel>("local", (param, model) => model.LocalFile = param)),
-					new Argument<DownloadFileClientInputModel>(0, (param, model) => model.LocalFile = param)
-						.PromtIfEmpty("Local file"));
+						Argument.Create(localFileAssignment, "-l", "-local"),
+						Argument.Create(localFileAssignment, 0)
+							.PromtIfEmpty("Local file: ")))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create(remoteFileAssignment, "-r", "-remote"),
+						Argument.Create(remoteFileAssignment, 0)
+							.PromtIfEmpty("Remote file: ")))
 				.Execute;
 
-			_commandDictionary[CommandNameMetadata.Connect] = ConnectHandler;
+			_commandDictionary[CommandNameMetadata.ChangeDirectory] = new ArgumentClientInput<ChangeDirectoryClientInputModel>(model => _clientFlowService.ChangeDirectory(model.Path))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create(cdPathAssignment, "-p", "-path"),
+						Argument.Create(cdPathAssignment, 0)))
+				.Execute;
+
+			_commandDictionary[CommandNameMetadata.ListDirectory] = new ArgumentClientInput<ListDirectoryClientInputModel>(model => _clientFlowService.ListDirectory(model.Path))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create(lsPathAssignment, "-p", "-path"),
+						Argument.Create(lsPathAssignment, 0)))
+				.Execute;
+
 			_commandDictionary[CommandNameMetadata.Authenticate] = AuthenticateHandler;
+			_commandDictionary[CommandNameMetadata.Connect] = ConnectHandler;
 			_commandDictionary[CommandNameMetadata.User] = UserHandler;
 			//_commandDictionary[CommandNameMetadata.Download] = DownloadFileHandler;
-			_commandDictionary[CommandNameMetadata.ListDirectory] = ListDirectory;
 
 			
 		}
