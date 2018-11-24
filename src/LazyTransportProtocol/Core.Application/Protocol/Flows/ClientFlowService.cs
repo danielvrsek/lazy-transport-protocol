@@ -11,6 +11,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 	{
 		private readonly IRemoteRequestExecutor remoteExecutor = new SocketProtocolRequestExecutor();
 
+		private string _currentFolder = "/";
+
 		public void Connect(string ipAdress, int port)
 		{
 			remoteExecutor.Connect(new SocketConnectionParameters
@@ -52,11 +54,13 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			return response.IsSuccessful;
 		}
 
-		public void ListDirectory(string path)
+		public void ListDirectory(string folder)
 		{
+			string path = folder.StartsWith('/') ? folder : _currentFolder + folder;
+
 			var response = remoteExecutor.Execute(new ListDirectoryClientRequest
 			{
-				Path = "/"
+				Path = path
 			});
 
 			Console.WriteLine(String.Join(", ", response.RemoteDirectories));
@@ -65,7 +69,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 		public void DownloadFile(string remoteFilepath, string localFilepath)
 		{
 			int offset = 0;
-			int count = 500;
+			int count = 15000;
 
 			DownloadFileResponse response;
 

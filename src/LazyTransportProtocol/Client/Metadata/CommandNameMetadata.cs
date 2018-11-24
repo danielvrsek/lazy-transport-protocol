@@ -6,7 +6,9 @@ namespace LazyTransportProtocol.Client.Metadata
 {
 	public static class CommandNameMetadata
 	{
-		public const string List = "cd";
+		public const string ListDirectory = "ls";
+
+		public const string ChangeDirectory = "cd";
 
 		public const string Authenticate = "login";
 

@@ -11,7 +11,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			Register(new ListDirectoryRequestHandler());
 			Register(new CreateUserRequestHandler());
 			Register(new DeleteUserRequestHandler());
-			Register(new DownloadFileHandler());
+			Register(new DownloadFileRequestHandler());
+			Register(new UploadFileRequestHandler());
 		}
 	}
 }

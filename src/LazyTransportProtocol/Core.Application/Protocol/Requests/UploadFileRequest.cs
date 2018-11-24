@@ -8,15 +8,13 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class DownloadFileRequest : IProtocolRequest<DownloadFileResponse>
+	public class UploadFileRequest : IProtocolRequest<AcknowledgementResponse>
 	{
-		public const string Identifier = "DOWNFILE";
+		public const string Identifier = "UPLOADFILE";
 
-		public string Filepath { get; set; }
+		public string Path { get; set; }
 
-		public int Offset { get; set; }
-
-		public int Count { get; set; }
+		public byte[] Data { get; set; }
 
 		public IAuthenticationContext AuthenticationContext { get; set; }
 

@@ -8,6 +8,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Metadata
 
 		public const string ProtocolVersion = "protocol-version";
 
-		public const string MaxRequestLength = "max-request-length";
+		public const string BufferSize = "max-request-length";
 	}
 }

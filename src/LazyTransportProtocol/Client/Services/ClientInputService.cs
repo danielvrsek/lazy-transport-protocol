@@ -1,6 +1,8 @@
 ﻿using LazyTransportProtocol.Client.Exceptions;
 using LazyTransportProtocol.Client.Metadata;
+using LazyTransportProtocol.Client.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Flow;
+using LazyTransportProtocol.Core.Domain.Exceptions.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +16,26 @@ namespace LazyTransportProtocol.Client.Services
 
 		private readonly ClientFlowService _clientFlowService = new ClientFlowService();
 
-		private bool _isConnectionEstablished;
-
 		public ClientInputService()
 		{
+			
+				
+
+			_commandDictionary[CommandNameMetadata.Download] = ArgumentCondition.Or(
+					ArgumentCondition.Or(
+						new Argument<DownloadFileClientInputModel>("l", (param, model) => model.LocalFile = param),
+						new Argument<DownloadFileClientInputModel>("local", (param, model) => model.LocalFile = param)),
+					new Argument<DownloadFileClientInputModel>(0, (param, model) => model.LocalFile = param)
+						.PromtIfEmpty("Local file"));
+				.Execute;
+
 			_commandDictionary[CommandNameMetadata.Connect] = ConnectHandler;
 			_commandDictionary[CommandNameMetadata.Authenticate] = AuthenticateHandler;
 			_commandDictionary[CommandNameMetadata.User] = UserHandler;
-			_commandDictionary[CommandNameMetadata.Download] = DownloadFileHandler;
+			//_commandDictionary[CommandNameMetadata.Download] = DownloadFileHandler;
+			_commandDictionary[CommandNameMetadata.ListDirectory] = ListDirectory;
+
+			
 		}
 
 		public void Execute(string commandRequest)
@@ -32,7 +46,7 @@ namespace LazyTransportProtocol.Client.Services
 
 			if (!_commandDictionary.ContainsKey(command))
 			{
-				throw new InvalidCommandException("Invalid command.");
+				throw new CommandException("Invalid command.");
 			}
 
 			string[] parameters = flags.Skip(1)
@@ -47,7 +61,14 @@ namespace LazyTransportProtocol.Client.Services
 					return x;
 				}).ToArray();
 
-			_commandDictionary[command](parameters);
+			try
+			{
+				_commandDictionary[command](parameters);
+			}
+			catch (ConnectionRequiredException)
+			{
+				throw new CommandException("Connection to the remote host is required.");
+			}
 		}
 
 		private void ConnectHandler(string[] parameters)
@@ -72,7 +93,7 @@ namespace LazyTransportProtocol.Client.Services
 
 				if (String.IsNullOrWhiteSpace(flags[1]))
 				{
-					throw new InvalidCommandException("Port number missing.");
+					throw new CommandException("Port number missing.");
 				}
 
 				ipString = flags[0];
@@ -87,38 +108,50 @@ namespace LazyTransportProtocol.Client.Services
 				else
 				{
 					Console.WriteLine("Port: ");
-					portString = Console.ReadLine(); 
+					portString = Console.ReadLine();
 				}
 			}
 
 			if (String.IsNullOrWhiteSpace(ipString))
 			{
-				throw new InvalidCommandException("IP adress cannot be empty.");
+				throw new CommandException("IP adress cannot be empty.");
 			}
 
 			if (!Int32.TryParse(portString, out int port))
 			{
-				throw new InvalidCommandException("Could not parse port number.");
+				throw new CommandException("Could not parse port number.");
 			}
 
 			Console.WriteLine($"Connecting to remote host {ipString} at {portString} ...");
 			_clientFlowService.Connect(ipString, port);
-
-			_isConnectionEstablished = true;
 
 			Execute(CommandNameMetadata.Authenticate);
 		}
 
 		private void AuthenticateHandler(string[] parameters)
 		{
-			if (!_isConnectionEstablished)
-			{
-				throw new InvalidCommandException("Connection to the remote host is required before login.");
-			}
-
 			string username = null;
 			string password = null;
 
+			GetUsernameAndPassword(parameters, ref username, ref password);
+
+			if (String.IsNullOrWhiteSpace(username) || String.IsNullOrWhiteSpace(password))
+			{
+				throw new CommandException("Username and password cannot be empty.");
+			}
+
+			Console.WriteLine("Authenticating user " + username + "...");
+			while (!_clientFlowService.Authenticate(username, password))
+			{
+				// Force new credetials
+				GetUsernameAndPassword(new string[0], ref username, ref password);
+			}
+
+			Console.WriteLine("Authentication successful.");
+		}
+
+		private void GetUsernameAndPassword(string[] parameters, ref string username, ref string password)
+		{
 			if (parameters.Length > 0)
 			{
 				username = parameters[0];
@@ -138,29 +171,13 @@ namespace LazyTransportProtocol.Client.Services
 				Console.Write("Password: ");
 				password = ReadSecureString();
 			}
-
-			if (String.IsNullOrWhiteSpace(username) || String.IsNullOrWhiteSpace(password))
-			{
-				throw new InvalidCommandException("Username and password cannot be empty.");
-			}
-
-			Console.WriteLine("Authenticating user " + username + "...");
-			while (!_clientFlowService.Authenticate(username, password))
-			{
-				AuthenticateHandler(parameters);
-			}
 		}
 
 		private void UserHandler(string[] parameters)
 		{
-			if (!_isConnectionEstablished)
-			{
-				throw new InvalidCommandException("Connection to the remote host is required.");
-			}
-
 			if (parameters.Length == 0)
 			{
-				throw new InvalidCommandException("Insufficient arguments.");
+				throw new CommandException("Insufficient arguments.");
 			}
 
 			if (parameters[0] == "create")
@@ -173,7 +190,7 @@ namespace LazyTransportProtocol.Client.Services
 			}
 			else
 			{
-				throw new InvalidCommandException("Unrecognized argument.");
+				throw new CommandException("Unrecognized argument.");
 			}
 		}
 
@@ -193,6 +210,38 @@ namespace LazyTransportProtocol.Client.Services
 			string localFilepath = parameters[1];
 
 			_clientFlowService.DownloadFile(remoteFilepath, localFilepath);
+		}
+
+		private void ListDirectory(string[] parameters)
+		{
+			string path;
+
+			if (parameters.Length > 0)
+			{
+				path = parameters[0];
+			}
+			else
+			{
+				throw new CommandException("Insufficient parameters.");
+			}
+
+			_clientFlowService.ListDirectory(path);
+		}
+
+		private void ChangeDirectory(string[] parameters)
+		{
+			string path;
+
+			if (parameters.Length > 0)
+			{
+				path = parameters[0];
+			}
+			else
+			{
+				throw new CommandException("Insufficient parameters.");
+			}
+
+			_clientFlowService.ListDirectory(path);
 		}
 
 		private string ReadSecureString()
@@ -217,7 +266,15 @@ namespace LazyTransportProtocol.Client.Services
 						Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
 						Console.Write(' ');
 						Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-						sb.Remove(sb.Length - 2, 1);
+
+						if (sb.Length > 1)
+						{
+							sb.Remove(sb.Length - 2, 1);
+						}
+						else
+						{
+							sb.Remove(0, 1);
+						}
 					}
 				}
 				else

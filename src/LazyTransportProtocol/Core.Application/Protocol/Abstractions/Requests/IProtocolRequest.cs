@@ -1,4 +1,5 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
+﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Infrastructure;
+using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
@@ -12,9 +13,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests
 	/// Abstraction for protocol requests.
 	/// </summary>
 	/// <typeparam name="TResponse">Type of the response</typeparam>
-	public interface IProtocolRequest<TResponse> : IRequest<TResponse>
-		where TResponse : class, IProtocolResponse, new()
+	public interface IProtocolRequest<out TResponse> : IRequest<TResponse>
+		where TResponse : IProtocolResponse
 	{
+		IAuthenticationContext AuthenticationContext { get; set; }
+
 		/// <summary>
 		/// Method to obtain identifier of the protocol request
 		/// </summary>

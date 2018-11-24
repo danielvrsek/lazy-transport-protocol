@@ -1,4 +1,5 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
+﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Infrastructure;
+using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Domain.Abstractions;
@@ -9,6 +10,6 @@ namespace LazyTransportProtocol.Core.Application.Infrastructure
 	{
 		public AgreedHeadersDictionary AgreedHeaders { get; set; }
 
-		public AuthenticatedClient AuthenticatedClient { get; set; }
+		public IAuthenticationContext AuthenticationContext { get; set; }
 	}
 }

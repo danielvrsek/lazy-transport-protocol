@@ -11,6 +11,7 @@ using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
+using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -67,7 +68,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				WorkSocket = handler
 			};
 
-			handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
+			handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
 			new AsyncCallback(OnDataReceived), state);
 		}
 
@@ -92,11 +93,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 				string requestString = state.StringBuilder.ToString();
 
-				if (requestString.IndexOf("<EOF>") > -1)
+				if (requestString.EndsWith("<EOF>"))
 				{
 					// All the data has been read
-					Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-						requestString.Length, requestString);
+					Console.WriteLine("Read {0} bytes from socket.",
+						requestString.Length);
 
 					requestString = requestString.Replace("<EOF>", "");
 
@@ -106,8 +107,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					{
 						// First client's request. Hanshake expected
 						serializedResponse = BeginHandshake(requestString, state);
-
-						state.Buffer
 					}
 					else
 					{
@@ -145,10 +144,10 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			{
 				state.ProtocolState = new ProtocolState
 				{
-					AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.MaxRequestLength, request.ProtocolVersion)
+					AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.BufferSize, request.ProtocolVersion)
 				};
 
-				state.Buffer = new byte[request.MaxRequestLength];
+				state.Buffer = new byte[request.BufferSize];
 			}
 
 			string identifier = response.GetIdentifier(handshakeProtocol);
@@ -163,12 +162,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		{
 			ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
 
-			MessageHeadersDictionary requestHeaders = new MessageHeadersDictionary();
 			MediumDeserializedObject requestObject = new ProtocolDeserializer().Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
 			ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
 
 			IProtocolResponse protocolResponse = null;
-			IRequest<IResponse> request = null;
+			IProtocolRequest<IProtocolResponse> request = null;
+
+			if (connectionState.AuthenticationContext == null && requestObject.ControlCommand != AuthenticationRequest.Identifier)
+			{
+				throw new AuthorizationException();
+			}
 
 			switch (requestObject.ControlCommand)
 			{
@@ -194,14 +197,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			}
 
 			void Deserialize<TRequest>()
-				where TRequest : IRequest<IResponse>
+				where TRequest : IProtocolRequest<IProtocolResponse>
 			{
 				request = ProtocolBodyDeserializer.Deserialize<TRequest>(requestObject.Body, protocolVersion);
-				protocolResponse = (IProtocolResponse)executor.Execute(request);
+				request.AuthenticationContext = connectionState.AuthenticationContext;
+				protocolResponse = executor.Execute(request);
 			}
 
+			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
+
 			string identifier = protocolResponse.GetIdentifier(protocolVersion);
-			string headers = new ProtocolMessageHeaderSerializer().Serialize(requestHeaders, protocolVersion);
+			string headers = new ProtocolMessageHeaderSerializer().Serialize(responseHeaders, protocolVersion);
 			string serializedBody = new ProtocolBodySerializer().Serialize(protocolResponse, protocolVersion);
 			string serializedResponse = new ProtocolSerializer().Serialize(identifier, headers, serializedBody, connectionState.AgreedHeaders);
 

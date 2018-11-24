@@ -12,6 +12,7 @@ using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
+using LazyTransportProtocol.Core.Domain.Exceptions.Client;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -47,17 +48,23 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			AcknowledgementResponse response = Execute(new HandshakeRequest
 			{
 				ProtocolVersion = _protocolVersion,
+				BufferSize = _maxRequestLength,
 				Separator = _separator
 			});
 
 			ProtocolState state = (ProtocolState)_connection.State;
 
-			state.AgreedHeaders = new AgreedHeadersDictionary(_separator, maxRequestLength, _protocolVersion);
+			state.AgreedHeaders = new AgreedHeadersDictionary(_separator, _maxRequestLength, _protocolVersion);
 		}
 
 		public TResponse Execute<TResponse>(IProtocolRequest<TResponse> request)
 			where TResponse : class, IProtocolResponse, new()
 		{
+			if (_connection == null)
+			{
+				throw new ConnectionRequiredException();
+			}
+
 			ProtocolState state = (ProtocolState)_connection.State;
 
 			MessageHeadersDictionary headers = new MessageHeadersDictionary();

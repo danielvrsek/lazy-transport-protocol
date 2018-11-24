@@ -11,7 +11,7 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions.Requests
 	/// </summary>
 	/// <typeparam name="TResponse">Expected response type for the request</typeparam>
 	public interface IRequest<out TResponse>
-		where TResponse : class, IResponse
+		where TResponse : IResponse
 	{
 	}
 }

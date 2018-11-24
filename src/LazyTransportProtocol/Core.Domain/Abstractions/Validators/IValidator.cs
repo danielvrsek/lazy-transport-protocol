@@ -4,8 +4,12 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Domain.Abstractions.Validators
 {
-	public interface IValidator
+	public interface IValidator<in T>
 	{
-		bool Validate(object value);
+		bool Validate(T value);
+	}
+
+	public interface IValidator : IValidator<object>
+	{
 	}
 }

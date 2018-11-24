@@ -8,17 +8,27 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 {
-	public class DownloadFileHandler : IProtocolRequestHandler<DownloadFileRequest, DownloadFileResponse>
+	public class UploadFileRequestHandler : IProtocolRequestHandler<UploadFileRequest, AcknowledgementResponse>
 	{
-		public DownloadFileResponse GetResponse(DownloadFileRequest request)
+		public AcknowledgementResponse GetResponse(UploadFileRequest request)
 		{
 			IOService service = new IOService();
-			byte[] data = service.ReadFile(request.Filepath, request.Offset, request.Count);
 
-			return new DownloadFileResponse
+			int code;
+
+			try
 			{
-				Data = data,
-				HasNext = data.Length == request.Count
+				service.AppendFile(request.Path, request.Data);
+				code = 200;
+			}
+			catch
+			{
+				code = 400;
+			}
+
+			return new AcknowledgementResponse
+			{
+				Code = code
 			};
 		}
 	}

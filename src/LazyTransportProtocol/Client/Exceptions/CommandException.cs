@@ -4,14 +4,14 @@ using System.Text;
 
 namespace LazyTransportProtocol.Client.Exceptions
 {
-	public class InvalidCommandException : Exception
+	public class CommandException : Exception
 	{
-		public InvalidCommandException()
+		public CommandException()
 		{
 
 		}
 
-		public InvalidCommandException(string message) : base(message)
+		public CommandException(string message) : base(message)
 		{
 
 		}

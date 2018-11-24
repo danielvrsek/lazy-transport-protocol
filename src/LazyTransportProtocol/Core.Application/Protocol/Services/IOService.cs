@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Services
@@ -51,9 +52,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 				throw new Exception("File does not exist.");
 			}
 
-			using (StreamWriter sw = new StreamWriter(filePath, true))
+			using (FileStream fs = File.OpenWrite(filePath))
 			{
-				sw.Write(data);
+				fs.Write(data, 0, data.Length);
 			}
 		}
 
@@ -70,6 +71,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		public void DeleteFile(string filePath)
 		{
 			File.Delete(filePath);
+		}
+
+		public string[] GetDirectories(string path)
+		{
+			return Directory.EnumerateDirectories(path).ToArray();
+		}
+
+		public string[] GetFiles(string path)
+		{
+			return Directory.EnumerateFiles(path).ToArray();
 		}
 
 	}

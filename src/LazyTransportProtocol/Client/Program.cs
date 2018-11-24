@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LazyTransportProtocol.Client
 {
@@ -39,7 +40,7 @@ namespace LazyTransportProtocol.Client
 				{
 					clientInputService.Execute(commandRequest);
 				}
-				catch (InvalidCommandException commandException)
+				catch (CommandException commandException)
 				{
 					Console.WriteLine(commandException.Message);
 				}
