@@ -75,8 +75,7 @@ namespace LazyTransportProtocol.Client.Services
 
 		public void Execute(string commandRequest)
 		{
-			string[] flags = commandRequest.Split(' ');
-
+			List<string> flags = ParseArguments(commandRequest);
 			string command = flags[0];
 
 			if (!_commandDictionary.ContainsKey(command))
@@ -178,11 +177,28 @@ namespace LazyTransportProtocol.Client.Services
 
 			if (parameters[0] == "create")
 			{
-				CreateUserHandler(parameters.Skip(1).ToArray());
+				new ArgumentClientInput<CreateUserClientInputModel>(model => _clientFlowService.CreateNewUser(model.Username, model.Password))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<CreateUserClientInputModel>((param, model) => model.Username = param, "-username", "-u"),
+						Argument.Create<CreateUserClientInputModel>((param, model) => model.Username = param, 0)
+							.PromtIfEmpty("Username")))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<CreateUserClientInputModel>((param, model) => model.Password = param, "-p", "-password"),
+						Argument.Create<CreateUserClientInputModel>((param, model) => model.Password = param, 1)
+							.PromtIfEmpty("Password")))
+				.Execute(parameters.Skip(1).ToArray());
 			}
 			else if (parameters[0] == "delete")
 			{
-				DeleteUserHandler(parameters.Skip(1).ToArray());
+				new ArgumentClientInput<DeleteUserClientInputModel>(model => _clientFlowService.DeleteUser(model.Username))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<DeleteUserClientInputModel>((param, model) => model.Username = param, "-username", "-u"),
+						Argument.Create<DeleteUserClientInputModel>((param, model) => model.Username = param, 0)
+							.PromtIfEmpty("Username")))
+				.Execute(parameters.Skip(1).ToArray());
 			}
 			else
 			{
@@ -190,14 +206,35 @@ namespace LazyTransportProtocol.Client.Services
 			}
 		}
 
-		private void CreateUserHandler(string[] parameters)
+		private List<string> ParseArguments(string command)
 		{
+			StringBuilder sb = new StringBuilder();
 
-		}
+			List<string> flags = new List<string>();
 
-		private void DeleteUserHandler(string[] parameters)
-		{
+			bool isQuoted = false;
 
+			for (int i = 0; i < command.Length; i++)
+			{
+				if (command[i] == ' ' && !isQuoted)
+				{
+					flags.Add(sb.ToString());
+					sb.Clear();
+				}
+				else
+				{
+					if (command[i] == '"')
+					{
+						isQuoted = !isQuoted;
+					}
+
+					sb.Append(command[i]);
+				}
+			}
+
+			flags.Add(sb.ToString());
+
+			return flags;
 		}
 	}
 }

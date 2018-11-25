@@ -2,8 +2,10 @@
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
+using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,11 +16,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 	{
 		public DownloadFileResponse GetResponse(DownloadFileRequest request)
 		{
+			AuthorizationService service = new AuthorizationService();
+			if (!service.HasAccessToDirectory(request.AuthenticationContext, Path.GetDirectoryName(request.Filepath)))
+			{
+				throw new AuthorizationException();
+			}
+
 			Span<byte> data = IOService.ReadFile(request.Filepath, request.Offset, request.Count);
 
 			return new DownloadFileResponse
 			{
-				Data = data.ToArray(),
+				Data = Convert.ToBase64String(data),
 				HasNext = data.Length == request.Count
 			};
 		}

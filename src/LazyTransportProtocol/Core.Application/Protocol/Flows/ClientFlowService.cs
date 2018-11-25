@@ -4,7 +4,9 @@ using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 {
@@ -57,14 +59,27 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 
 		public void ListDirectory(string folder)
 		{
-			string path = Path.IsPathRooted(folder) ? folder : Path.Combine(_currentFolder, folder);
+			string path;
+
+			if (String.IsNullOrEmpty(folder))
+			{
+				path = _currentFolder;
+			}
+			else
+			{
+				path = Path.IsPathRooted(folder) ? folder : Path.Combine(_currentFolder, folder);
+			}
 
 			var response = remoteExecutor.Execute(new ListDirectoryClientRequest
 			{
 				Path = path
 			});
 
-			Console.WriteLine(String.Join(", ", response.RemoteDirectories));
+			List<string> names = response.RemoteDirectories.Select(x => x.Name).ToList();
+
+			names.AddRange(response.RemoteFiles.Select(x => x.Filename));
+
+			Console.WriteLine(String.Join(", ", names));
 		}
 
 		public void DownloadFile(string remoteFilepath, string localFilepath)
@@ -90,7 +105,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 							Count = count
 						});
 
-						bw.Write(response.Data);
+						byte[] data = Convert.FromBase64String(response.Data);
+
+						bw.Write(data);
 
 						offset += count;
 					}

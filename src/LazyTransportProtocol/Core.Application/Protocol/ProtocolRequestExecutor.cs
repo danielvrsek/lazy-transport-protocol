@@ -38,7 +38,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					new BasicRequestValidatorBuilder<DownloadFileRequest>()
 						.AddPropertyValidator(x => x.Filepath, new NotNullOrEmptyValidator())
 						.AddPropertyValidator(x => x.Count, x => x > 0)
-						.AddPropertyValidator(x => x.Offset, x => x > 0)
+						.AddPropertyValidator(x => x.Offset, x => x >= 0)
 						.Build());
 			Register(new UploadFileRequestHandler())
 				.AddValidator(

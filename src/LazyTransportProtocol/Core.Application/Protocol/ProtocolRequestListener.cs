@@ -1,10 +1,12 @@
 ﻿using LazyTransportProtocol.Core.Application.Infrastructure;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
+using LazyTransportProtocol.Core.Application.Protocol.Extensions;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Metadata;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
+using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Domain.Abstractions;
@@ -15,6 +17,7 @@ using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -34,7 +37,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		public void Listen(int port)
 		{
-			IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+			IPAddress ipAddress = IPAddress.Parse("192.168.0.102");
 			IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
 
 			Socket listener = new Socket(ipAddress.AddressFamily,
@@ -67,39 +70,54 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				WorkSocket = handler
 			};
 
-			handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
+			byte[] buffer = state.NextBuffer;
+
+			handler.BeginReceive(buffer, 0, buffer.Length, 0, OnDataReceived, state);
 		}
 
 		public static void OnDataReceived(IAsyncResult ar)
 		{
 			try
 			{
-				IDecoder decoder = new ProtocolDecoder();
+				IEncoder encoder = new ProtocolEncoder();
+				byte[] eof = encoder.Encode("<EOF>");
 
 				StateObject state = (StateObject)ar.AsyncState;
 				Socket handler = state.WorkSocket;
 
 				int bytesRead = handler.EndReceive(ar);
 
-				if (bytesRead == 0)
+				byte[] currentBuffer = state.CurrentBuffer;
+				state.BufferList[state.BufferList.Count - 1] = new ArraySegment<byte>(currentBuffer, 0, bytesRead);
+
+				if (currentBuffer.EndsWith(eof))
 				{
-					return;
-				}
+					IDecoder decoder = new ProtocolDecoder();
 
-				string decoded = decoder.Decode(state.Buffer, 0, bytesRead);
-				state.StringBuilder.Append(decoded);
-
-				string requestString = state.StringBuilder.ToString();
-
-				if (requestString.EndsWith("<EOF>"))
-				{
 					// All the data has been read
 					Console.WriteLine("Read {0} bytes from socket.",
-						requestString.Length);
-
-					requestString = requestString.Replace("<EOF>", "");
+						currentBuffer.Length);
 
 					string serializedResponse;
+
+					int requestLength = 0;
+
+					for (int i = 0; i < state.BufferList.Count; i++)
+					{
+						requestLength += state.BufferList[i].Count;
+					}
+
+					StringBuilder requestStringBuilder = new StringBuilder(requestLength);
+
+					for (int i = 0; i < state.BufferList.Count; i++)
+					{
+						ArraySegment<byte> segment = state.BufferList[i];
+						string decodedSegment = decoder.Decode(segment.Array, 0, segment.Count);
+
+						requestStringBuilder.Append(decodedSegment);
+					}
+
+					string requestString = requestStringBuilder.ToString();
 
 					if (state.ProtocolState == null)
 					{
@@ -111,12 +129,20 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 						serializedResponse = HandleRequest(requestString, (ProtocolState)state.ProtocolState);
 					}
 
-					Send(state, serializedResponse);
+					Send(state, serializedResponse + "<EOF>");
 				}
 				else
 				{
 					// Not all data received. Get more.
-					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
+					if (bytesRead > 0)
+					{
+						byte[] buffer = state.NextBuffer;
+						handler.BeginReceive(buffer, 0, buffer.Length, 0, OnDataReceived, state);
+					}
+					else
+					{
+						handler.BeginReceive(currentBuffer, 0, currentBuffer.Length, 0, OnDataReceived, state);
+					}
 				}
 			}
 			catch (Exception e)
@@ -144,7 +170,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.BufferSize, request.ProtocolVersion)
 				};
 
-				state.Buffer = new byte[request.BufferSize];
+				state.BufferSize = request.BufferSize;
 			}
 
 			string identifier = response.GetIdentifier(handshakeProtocol);
@@ -210,9 +236,31 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					request.AuthenticationContext = connectionState.AuthenticationContext;
 					protocolResponse = executor.Execute(request);
 				}
+				catch (AuthorizationException)
+				{
+					{
+						protocolResponse = new ErrorResponse
+						{
+							Code = 500,
+							Message = "Unauthorized."
+						};
+					}
+				}
 				catch (CustomException e)
 				{
-
+					protocolResponse = new ErrorResponse
+					{
+						Code = 500,
+						Message = e.Message
+					};
+				}
+				catch (Exception)
+				{
+					protocolResponse = new ErrorResponse
+					{
+						Code = 500,
+						Message = "Internal server error."
+					};
 				}
 			}
 
@@ -247,8 +295,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 				if (state.ProtocolState != null)
 				{
-					state.StringBuilder.Clear();
-					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
+					state.BufferList.Clear();
+					handler.BeginReceive(state.CurrentBuffer, 0, state.CurrentBuffer.Length, 0, OnDataReceived, state);
 				}
 				else
 				{
@@ -265,11 +313,29 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		public class StateObject
 		{
+			public int BufferSize { get; set; } = 1024;
+
+			public IList<ArraySegment<byte>> BufferList { get; } = new List<ArraySegment<byte>>();
+
+			public byte[] CurrentBuffer => BufferList[BufferList.Count - 1].Array;
+
+			public byte[] NextBuffer
+			{
+				get
+				{
+					if (BufferList.Count > 1000)
+					{
+						throw new Exception("Exceeded buffer count.");
+					}
+
+					byte[] buffer = new byte[BufferSize];
+					BufferList.Add(buffer);
+
+					return BufferList[BufferList.Count - 1].Array;
+				}
+			}
+
 			public Socket WorkSocket { get; set; }
-
-			public byte[] Buffer { get; set; } = new byte[1024];
-
-			public StringBuilder StringBuilder { get; } = new StringBuilder();
 
 			public IConnectionState ProtocolState { get; set; }
 		}

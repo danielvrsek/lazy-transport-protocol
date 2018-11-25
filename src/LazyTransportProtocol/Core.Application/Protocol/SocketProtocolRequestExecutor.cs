@@ -12,7 +12,9 @@ using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
+using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Client;
+using LazyTransportProtocol.Core.Domain.Exceptions.Response;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -79,6 +81,19 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			string responseDecoded = _decoder.Decode(responseEncoded);
 
 			var requestObject = ProtocolDeserializer.Deserialize(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
+			string identifier = new TResponse().GetIdentifier(state.AgreedHeaders.ProtocolVersion);
+			
+			if (requestObject.ControlCommand != identifier)
+			{
+				if (requestObject.ControlCommand == ErrorResponse.Identifier)
+				{
+					ErrorResponse errorResponse = ProtocolBodyDeserializer.Deserialize<ErrorResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
+					throw new CustomException(errorResponse.Message);
+				}
+
+				throw new InvalidResponseException();
+			}
+
 			TResponse response = ProtocolBodyDeserializer.Deserialize<TResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
 
 			return response;

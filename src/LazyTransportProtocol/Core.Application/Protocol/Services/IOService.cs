@@ -27,7 +27,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 			string combined = Path.Combine(rootFolder, path);
 
-			return combined;
+			 return combined;
 		}
 
 		public static string CreateDirectory(string path, string directoryName)
@@ -121,14 +121,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateDirectories(systemPath).ToArray();
+			return Directory.EnumerateDirectories(systemPath).Select(x => Path.GetRelativePath(ServerConfiguration.RootFolder, x)).ToArray();
 		}
 
 		public static string[] GetFiles(string path)
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateFiles(systemPath).ToArray();
+			return Directory.EnumerateFiles(systemPath).Select(x => Path.GetRelativePath(ServerConfiguration.RootFolder, x)).ToArray();
 		}
 
 	}

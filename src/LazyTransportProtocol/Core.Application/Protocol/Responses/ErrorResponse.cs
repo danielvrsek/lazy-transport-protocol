@@ -6,13 +6,13 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 {
-	public class DownloadFileResponse : IProtocolResponse
+	public class ErrorResponse : IProtocolResponse
 	{
-		public const string Identifier = "DOWNFILERESP";
+		public const string Identifier = "ERRRESP";
 
-		public string Data { get; set; }
+		public int Code { get; set; }
 
-		public bool HasNext { get; set; }
+		public string Message { get; set; }
 
 		public string GetIdentifier(ProtocolVersion protocolVersion)
 		{

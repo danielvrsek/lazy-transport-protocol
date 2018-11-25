@@ -1,18 +1,8 @@
 ﻿using LazyTransportProtocol.Client.Exceptions;
 using LazyTransportProtocol.Client.Services;
-using LazyTransportProtocol.Core.Application.Protocol;
-using LazyTransportProtocol.Core.Application.Protocol.Flow;
-using LazyTransportProtocol.Core.Application.Protocol.Requests;
-using LazyTransportProtocol.Core.Application.Protocol.Services;
-using LazyTransportProtocol.Core.Application.Transport;
-using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Domain.Exceptions;
+using LazyTransportProtocol.Core.Domain.Exceptions.Response;
 using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace LazyTransportProtocol.Client
 {
@@ -22,7 +12,7 @@ namespace LazyTransportProtocol.Client
 		{
 			ClientInputService clientInputService = new ClientInputService();
 
-			Console.WriteLine("LazyTransportProtocol client v0.1");
+			Console.WriteLine("LazyTransportProtocol client v0.9");
 			Console.WriteLine();
 
 			string commandRequest;
@@ -45,13 +35,17 @@ namespace LazyTransportProtocol.Client
 				{
 					Console.WriteLine(commandException.Message);
 				}
+				catch (InvalidResponseException)
+				{
+					Console.WriteLine("Invalid response from server.");
+				}
 				catch (CustomException e)
 				{
-					Console.WriteLine(e.Message);
+					Console.WriteLine("Error occured: " + e.Message);
 				}
-				catch
+				catch (Exception e)
 				{
-					Console.WriteLine("Unexpected error occured. Exiting...");
+					Console.WriteLine(e.Message);
 					Console.ReadLine();
 					break;
 				}
