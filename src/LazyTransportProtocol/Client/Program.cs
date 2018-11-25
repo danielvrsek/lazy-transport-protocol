@@ -6,6 +6,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
+using LazyTransportProtocol.Core.Domain.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -43,6 +44,10 @@ namespace LazyTransportProtocol.Client
 				catch (CommandException commandException)
 				{
 					Console.WriteLine(commandException.Message);
+				}
+				catch (CustomException e)
+				{
+					Console.WriteLine(e.Message);
 				}
 				catch
 				{

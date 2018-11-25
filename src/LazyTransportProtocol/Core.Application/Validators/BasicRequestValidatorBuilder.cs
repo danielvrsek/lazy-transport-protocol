@@ -20,6 +20,15 @@ namespace LazyTransportProtocol.Core.Application.Validators
 			return this;
 		}
 
+		public IPipelineValidatorBuilder<TRequest> AddPropertyValidator<TValue>(Expression<Func<TRequest, TValue>> expression, Predicate<TValue> predicate)
+		{
+			MemberExpression memberExpression = expression.Body as MemberExpression;
+
+			_requestValidator.AddValidator(memberExpression.Member, new PredicateValidator<TValue>(predicate));
+
+			return this;
+		}
+
 		public IPipelineValidator<TRequest> Build()
 		{
 			return _requestValidator;

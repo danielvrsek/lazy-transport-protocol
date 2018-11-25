@@ -9,7 +9,8 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions.Validators
 		bool Validate(T value);
 	}
 
-	public interface IValidator : IValidator<object>
+	public interface IValidator
 	{
+		bool Validate(object value);
 	}
 }

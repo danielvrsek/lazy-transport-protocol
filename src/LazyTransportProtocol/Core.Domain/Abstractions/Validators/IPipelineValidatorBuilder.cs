@@ -9,6 +9,8 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions.Validators
 	{
 		IPipelineValidatorBuilder<T> AddPropertyValidator<TValue>(Expression<Func<T, TValue>> propertyExpression, IValidator validator);
 
+		IPipelineValidatorBuilder<T> AddPropertyValidator<TValue>(Expression<Func<T, TValue>> expression, Predicate<TValue> predicate);
+
 		IPipelineValidator<T> Build();
 	}
 }

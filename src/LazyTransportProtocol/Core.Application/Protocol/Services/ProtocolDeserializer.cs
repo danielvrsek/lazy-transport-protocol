@@ -10,12 +10,12 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolDeserializer
 	{
-		public MediumDeserializedObject Deserialize(string requestString, AgreedHeadersDictionary headers)
+		public static MediumDeserializedObject Deserialize(string requestString, AgreedHeadersDictionary headers)
 		{
 			return Deserialize(requestString, headers, headers.ProtocolVersion);
 		}
 
-		public MediumDeserializedObject Deserialize(string requestString, AgreedHeadersDictionary headers, ProtocolVersion protocolVersion)
+		public static MediumDeserializedObject Deserialize(string requestString, AgreedHeadersDictionary headers, ProtocolVersion protocolVersion)
 		{
 			Contract.Requires(!String.IsNullOrWhiteSpace(requestString));
 			Contract.Requires(headers != null);

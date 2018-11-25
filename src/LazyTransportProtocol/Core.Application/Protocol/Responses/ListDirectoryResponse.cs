@@ -9,7 +9,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 {
 	public class ListDirectoryResponse : IProtocolResponse
 	{
-		public const string Identifier = "LIST";
+		public const string Identifier = "LISTRESP";
 
 		public List<RemoteFile> RemoteFiles { get; set; }
 

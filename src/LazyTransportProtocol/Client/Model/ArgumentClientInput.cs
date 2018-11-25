@@ -29,6 +29,7 @@ namespace LazyTransportProtocol.Client.Model
 		public ArgumentClientInput(Action<TModel> actionToExecute, Behavior behavior = Behavior.ThrowException)
 		{
 			_actionToExecute = actionToExecute;
+			_behavior = behavior;
 		}
 
 		public ArgumentClientInput<TModel> RegisterArgument(IArgument<TModel> argument)

@@ -21,11 +21,13 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		private bool IsChildOfRootDirectory(string path)
 		{
-			string rootFolder = ServerConfiguration.RootFolder;
+			string systemPath = IOService.TransformPath(path);
 
-			if (Directory.Exists(path))
+			string rel = Path.GetRelativePath(ServerConfiguration.RootFolder, systemPath);
+
+			if (rel.StartsWith(".."))
 			{
-				return path.StartsWith(rootFolder);
+				return false;
 			}
 
 			return true;

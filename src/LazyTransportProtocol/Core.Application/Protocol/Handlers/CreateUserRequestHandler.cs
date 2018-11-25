@@ -7,6 +7,8 @@ using LazyTransportProtocol.Core.Application.Protocol.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 {
@@ -37,6 +39,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 			{
 				Code = isSuccessful ? 200 : 400
 			};
+		}
+
+		public Task<AcknowledgementResponse> GetResponseAsync(CreateUserRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

@@ -3,11 +3,7 @@ using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,6 +40,11 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			{
 				ResponseData = data
 			};
+		}
+
+		public Task<SendDataResponse> GetResponseAsync(SendDataRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
 		}
 
 		public IList<ArraySegment<byte>> Receive(Socket socket)

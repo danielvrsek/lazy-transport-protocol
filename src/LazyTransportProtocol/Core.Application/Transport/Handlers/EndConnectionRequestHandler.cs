@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
@@ -18,6 +20,11 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			socket.Close();
 
 			return new EndConnectionResponse();
+		}
+
+		public Task<EndConnectionResponse> GetResponseAsync(EndConnectionRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

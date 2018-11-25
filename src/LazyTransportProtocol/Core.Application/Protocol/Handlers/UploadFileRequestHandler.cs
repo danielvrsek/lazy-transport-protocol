@@ -5,6 +5,8 @@ using LazyTransportProtocol.Core.Application.Protocol.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 {
@@ -12,13 +14,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 	{
 		public AcknowledgementResponse GetResponse(UploadFileRequest request)
 		{
-			IOService service = new IOService();
-
 			int code;
 
 			try
 			{
-				service.AppendFile(request.Path, request.Data);
+				IOService.AppendFile(request.Path, request.Data);
 				code = 200;
 			}
 			catch
@@ -30,6 +30,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 			{
 				Code = code
 			};
+		}
+
+		public Task<AcknowledgementResponse> GetResponseAsync(UploadFileRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

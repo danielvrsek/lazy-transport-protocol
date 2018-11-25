@@ -2,6 +2,7 @@
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
+using LazyTransportProtocol.Core.Domain.Exceptions;
 using System;
 using System.IO;
 
@@ -56,7 +57,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 
 		public void ListDirectory(string folder)
 		{
-			string path = folder.StartsWith('/') ? folder : _currentFolder + folder;
+			string path = Path.IsPathRooted(folder) ? folder : Path.Combine(_currentFolder, folder);
 
 			var response = remoteExecutor.Execute(new ListDirectoryClientRequest
 			{
@@ -68,34 +69,48 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 
 		public void DownloadFile(string remoteFilepath, string localFilepath)
 		{
+			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(_currentFolder, remoteFilepath);
+
 			int offset = 0;
 			int count = 15000;
 
 			DownloadFileResponse response;
 
-			using (FileStream fs = File.OpenWrite(localFilepath))
-			using (BinaryWriter bw = new BinaryWriter(fs))
+			try
 			{
-				do
+				using (FileStream fs = File.OpenWrite(localFilepath))
+				using (BinaryWriter bw = new BinaryWriter(fs))
 				{
-					response = remoteExecutor.Execute(new DownloadFileRequest
+					do
 					{
-						Filepath = remoteFilepath,
-						Offset = offset,
-						Count = count
-					});
+						response = remoteExecutor.Execute(new DownloadFileRequest
+						{
+							Filepath = remoteFilepath,
+							Offset = offset,
+							Count = count
+						});
 
-					bw.Write(response.Data);
+						bw.Write(response.Data);
 
-					offset += count;
+						offset += count;
+					}
+					while (response.HasNext);
 				}
-				while (response.HasNext);
+			}
+			catch (IOException e)
+			{
+				throw new CustomException(e.Message);
 			}
 		}
 
-		public void ChangeDirectory(string path)
+		public void UploadFile(string localFile, string remoteFile)
 		{
 			throw new NotImplementedException();
+		}
+
+		public void ChangeDirectory(string folder)
+		{
+			_currentFolder = Path.IsPathRooted(folder) ? folder : Path.Combine(_currentFolder, folder);
 		}
 
 		public void Disconnect()

@@ -4,17 +4,17 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Domain.Exceptions
 {
-	public abstract class CustomException : Exception
+	public class CustomException : Exception
 	{
-		protected CustomException()
+		public CustomException()
 		{
 		}
 
-		protected CustomException(string message) : base(message)
+		public CustomException(string message) : base(message)
 		{
 		}
 
-		protected CustomException(Exception exception) : base("See inner exception.", exception)
+		public CustomException(Exception exception) : base("See inner exception.", exception)
 		{
 		}
 	}

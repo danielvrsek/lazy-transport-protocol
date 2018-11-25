@@ -12,18 +12,18 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolBodySerializer
 	{
-		public string Serialize<TResponse>(IProtocolRequest<TResponse> request, ProtocolVersion protocolVersion)
+		public static string Serialize<TResponse>(IProtocolRequest<TResponse> request, ProtocolVersion protocolVersion)
 			where TResponse : class, IProtocolResponse, new()
 		{
 			return SerializeInternal(request);
 		}
 
-		public string Serialize(IProtocolResponse response, ProtocolVersion protocolVersion)
+		public static string Serialize(IProtocolResponse response, ProtocolVersion protocolVersion)
 		{
 			return SerializeInternal(response);
 		}
 
-		private string SerializeInternal<T>(T obj)
+		private static string SerializeInternal<T>(T obj)
 		{
 			if (obj == null)
 			{

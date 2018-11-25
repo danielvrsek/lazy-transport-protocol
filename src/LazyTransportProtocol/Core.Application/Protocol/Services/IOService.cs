@@ -1,4 +1,6 @@
-﻿using System;
+﻿using LazyTransportProtocol.Core.Application.Protocol.Configuration;
+using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,31 +10,65 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class IOService
 	{
-		public string CreateDirectory(string path, string directoryName)
+		/// <summary>
+		/// Transforms path from request into system path
+		/// </summary>
+		/// <returns></returns>
+		public static string TransformPath(string path)
 		{
-			string fullPath = Path.Combine(path, directoryName);
+			string rootFolder = ServerConfiguration.RootFolder;
+			path = Uri.UnescapeDataString(path);
+
+			if (Path.IsPathRooted(path))
+			{
+				string pathRoot = Path.GetPathRoot(path);
+				path = path.Substring(pathRoot.Length);
+			}
+
+			string combined = Path.Combine(rootFolder, path);
+
+			return combined;
+		}
+
+		public static string CreateDirectory(string path, string directoryName)
+		{
+			string systemPath = TransformPath(path);
+
+			if (directoryName.Contains('\\') || directoryName.Contains('/'))
+			{
+				throw new ArgumentException("Invalid directory name.");
+			}
+
+			string fullPath = Path.Combine(systemPath, directoryName);
 
 			DirectoryInfo directoryInfo = Directory.CreateDirectory(fullPath);
 
 			return directoryInfo.FullName;
 		}
 
-		public void MoveDirectory(string oldPath, string newPath)
+		public static void MoveDirectory(string oldPath, string newPath)
 		{
-			Directory.Move(oldPath, newPath);
+			string oldSystemPath = TransformPath(oldPath);
+			string newSystemPath = TransformPath(newPath);
+
+			Directory.Move(oldSystemPath, newSystemPath);
 		}
 
-		public void DeleteDirectory(string path, bool recursive = true)
+		public static void DeleteDirectory(string path, bool recursive = true)
 		{
-			Directory.Delete(path, recursive);
+			string systemPath = TransformPath(path);
+
+			Directory.Delete(systemPath, recursive);
 		}
 
-		public byte[] ReadFile(string fullpath, int offset, int count)
+		public static Span<byte> ReadFile(string fullpath, int offset, int count)
 		{
+			string systemPath = TransformPath(fullpath);
+
 			byte[] buffer = new byte[count];
 			int bytesRead = 0;
 
-			using (FileStream fs = File.OpenRead(fullpath))
+			using (FileStream fs = File.OpenRead(systemPath))
 			using (BinaryReader binaryReader = new BinaryReader(fs))
 			{
 				fs.Position = offset;
@@ -40,47 +76,59 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 				bytesRead = binaryReader.Read(buffer, 0, count);
 			}
 
-			Array.Resize(ref buffer, bytesRead);
-
-			return buffer;
+			return new Span<byte>(buffer, 0, bytesRead);
 		}
 
-		public void AppendFile(string filePath, byte[] data, bool createIfNotExists = true)
+		public static void AppendFile(string filePath, byte[] data, bool createIfNotExists = true)
 		{
-			if (!createIfNotExists && !File.Exists(filePath))
+			string systemPath = TransformPath(filePath);
+
+			if (!createIfNotExists && !File.Exists(systemPath))
 			{
 				throw new Exception("File does not exist.");
 			}
 
-			using (FileStream fs = File.OpenWrite(filePath))
+			using (FileStream fs = File.OpenWrite(systemPath))
 			{
 				fs.Write(data, 0, data.Length);
 			}
 		}
 
-		public void CopyFile(string oldFilePath, string newFilePath)
+		public static void CopyFile(string oldFilePath, string newFilePath)
 		{
-			File.Copy(oldFilePath, newFilePath);
+			string oldSystemPath = TransformPath(oldFilePath);
+			string newSystemPath = TransformPath(newFilePath);
+
+			File.Copy(oldSystemPath, newSystemPath);
 		}
 
-		public void MoveFile(string oldFilePath, string newFilePath)
+		public static void MoveFile(string oldFilePath, string newFilePath)
 		{
-			File.Move(oldFilePath, newFilePath);
+			string oldSystemPath = TransformPath(oldFilePath);
+			string newSystemPath = TransformPath(newFilePath);
+
+			File.Move(oldSystemPath, newSystemPath);
 		}
 
-		public void DeleteFile(string filePath)
+		public static void DeleteFile(string filePath)
 		{
-			File.Delete(filePath);
+			string systemPath = TransformPath(filePath);
+
+			File.Delete(systemPath);
 		}
 
-		public string[] GetDirectories(string path)
+		public static string[] GetDirectories(string path)
 		{
-			return Directory.EnumerateDirectories(path).ToArray();
+			string systemPath = TransformPath(path);
+
+			return Directory.EnumerateDirectories(systemPath).ToArray();
 		}
 
-		public string[] GetFiles(string path)
+		public static string[] GetFiles(string path)
 		{
-			return Directory.EnumerateFiles(path).ToArray();
+			string systemPath = TransformPath(path);
+
+			return Directory.EnumerateFiles(systemPath).ToArray();
 		}
 
 	}

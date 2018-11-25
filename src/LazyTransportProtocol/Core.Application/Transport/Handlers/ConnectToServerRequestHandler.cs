@@ -2,8 +2,11 @@
 using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
+using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
@@ -26,6 +29,11 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 					Sender = sender
 				}
 			};
+		}
+
+		public Task<ConnectToServerResponse> GetResponseAsync(ConnectToServerRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

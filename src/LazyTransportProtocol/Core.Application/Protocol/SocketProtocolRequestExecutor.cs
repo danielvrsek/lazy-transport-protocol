@@ -69,16 +69,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 			MessageHeadersDictionary headers = new MessageHeadersDictionary();
 
-			string requestHeaders = new ProtocolMessageHeaderSerializer().Serialize(headers, state.AgreedHeaders.ProtocolVersion);
-			string requestBody = new ProtocolBodySerializer().Serialize(request, state.AgreedHeaders.ProtocolVersion);
+			string requestHeaders = ProtocolMessageHeaderSerializer.Serialize(headers, state.AgreedHeaders.ProtocolVersion);
+			string requestBody = ProtocolBodySerializer.Serialize(request, state.AgreedHeaders.ProtocolVersion);
 			string requestIdentifier = request.GetIdentifier(state.AgreedHeaders.ProtocolVersion);
-			string requestString = new ProtocolSerializer().Serialize(requestIdentifier, requestHeaders, requestBody, state.AgreedHeaders);
-
+			string requestString = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody, state.AgreedHeaders);
 			byte[] requestEncoded = _encoder.Encode(requestString + "<EOF>");
+
 			byte[] responseEncoded = _connection.Send(requestEncoded);
 			string responseDecoded = _decoder.Decode(responseEncoded);
 
-			var requestObject = new ProtocolDeserializer().Deserialize(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
+			var requestObject = ProtocolDeserializer.Deserialize(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
 			TResponse response = ProtocolBodyDeserializer.Deserialize<TResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
 
 			return response;

@@ -11,6 +11,7 @@ using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
+using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
@@ -47,9 +48,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				allDone.Reset();
 
 				Console.WriteLine("Waiting for a connection...");
-				listener.BeginAccept(
-					new AsyncCallback(OnClientConnected),
-					listener);
+				listener.BeginAccept(OnClientConnected, listener);
 
 				allDone.WaitOne();
 			}
@@ -68,8 +67,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				WorkSocket = handler
 			};
 
-			handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
-			new AsyncCallback(OnDataReceived), state);
+			handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
 		}
 
 		public static void OnDataReceived(IAsyncResult ar)
@@ -118,8 +116,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				else
 				{
 					// Not all data received. Get more.
-					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
-						new AsyncCallback(OnDataReceived), state);
+					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
 				}
 			}
 			catch (Exception e)
@@ -135,7 +132,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			// Default headers for handshake
 			AgreedHeadersDictionary handshakeHeaders = new AgreedHeadersDictionary(";", 1024, handshakeProtocol);
 			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
-			MediumDeserializedObject requestObject = new ProtocolDeserializer().Deserialize(requestString, handshakeHeaders, handshakeProtocol);
+			MediumDeserializedObject requestObject = ProtocolDeserializer.Deserialize(requestString, handshakeHeaders, handshakeProtocol);
 
 			HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
 			var response = new ProtocolRequestExecutor().Execute(request);
@@ -151,9 +148,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			}
 
 			string identifier = response.GetIdentifier(handshakeProtocol);
-			string headers = new ProtocolMessageHeaderSerializer().Serialize(responseHeaders, handshakeProtocol);
-			string responseBody = new ProtocolBodySerializer().Serialize(response, handshakeProtocol);
-			string serializedResponse = new ProtocolSerializer().Serialize(identifier, headers, responseBody, handshakeHeaders);
+			string headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders, handshakeProtocol);
+			string responseBody = ProtocolBodySerializer.Serialize(response, handshakeProtocol);
+			string serializedResponse = ProtocolSerializer.Serialize(identifier, headers, responseBody, handshakeHeaders);
 
 			return serializedResponse;
 		}
@@ -162,54 +159,69 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		{
 			ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
 
-			MediumDeserializedObject requestObject = new ProtocolDeserializer().Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
+			MediumDeserializedObject requestObject = ProtocolDeserializer.Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
 			ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
 
 			IProtocolResponse protocolResponse = null;
 			IProtocolRequest<IProtocolResponse> request = null;
 
-			if (connectionState.AuthenticationContext == null && requestObject.ControlCommand != AuthenticationRequest.Identifier)
+			if (connectionState.AuthenticationContext == null)
 			{
-				throw new AuthorizationException();
+				if (requestObject.ControlCommand != AuthenticationRequest.Identifier)
+				{
+					throw new AuthorizationException();
+				}
+
+				Deserialize<AuthenticationRequest>();
+
+				if (request.AuthenticationContext != null)
+				{
+					connectionState.AuthenticationContext = request.AuthenticationContext;
+				}
 			}
-
-			switch (requestObject.ControlCommand)
+			else
 			{
-				case CreateUserRequest.Identifier:
-					Deserialize<CreateUserRequest>();
-					break;
+				switch (requestObject.ControlCommand)
+				{
+					case CreateUserRequest.Identifier:
+						Deserialize<CreateUserRequest>();
+						break;
 
-				case DeleteUserRequest.Identifier:
-					Deserialize<DeleteUserRequest>();
-					break;
+					case DeleteUserRequest.Identifier:
+						Deserialize<DeleteUserRequest>();
+						break;
 
-				case AuthenticationRequest.Identifier:
-					Deserialize<AuthenticationRequest>();
-					break;
+					case ListDirectoryClientRequest.Identifier:
+						Deserialize<ListDirectoryClientRequest>();
+						break;
 
-				case ListDirectoryClientRequest.Identifier:
-					Deserialize<ListDirectoryClientRequest>();
-					break;
-
-				case DownloadFileRequest.Identifier:
-					Deserialize<DownloadFileRequest>();
-					break;
+					case DownloadFileRequest.Identifier:
+						Deserialize<DownloadFileRequest>();
+						break;
+				}
 			}
 
 			void Deserialize<TRequest>()
 				where TRequest : IProtocolRequest<IProtocolResponse>
 			{
-				request = ProtocolBodyDeserializer.Deserialize<TRequest>(requestObject.Body, protocolVersion);
-				request.AuthenticationContext = connectionState.AuthenticationContext;
-				protocolResponse = executor.Execute(request);
+				try
+				{
+					request = ProtocolBodyDeserializer.Deserialize<TRequest>(requestObject.Body, protocolVersion);
+					request.AuthenticationContext = connectionState.AuthenticationContext;
+					protocolResponse = executor.Execute(request);
+				}
+				catch (CustomException e)
+				{
+
+				}
 			}
 
 			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
 
 			string identifier = protocolResponse.GetIdentifier(protocolVersion);
-			string headers = new ProtocolMessageHeaderSerializer().Serialize(responseHeaders, protocolVersion);
-			string serializedBody = new ProtocolBodySerializer().Serialize(protocolResponse, protocolVersion);
-			string serializedResponse = new ProtocolSerializer().Serialize(identifier, headers, serializedBody, connectionState.AgreedHeaders);
+			string headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders, protocolVersion);
+			string serializedBody = ProtocolBodySerializer.Serialize(protocolResponse, protocolVersion);
+			string serializedResponse = ProtocolSerializer.Serialize(identifier, headers, serializedBody, connectionState.AgreedHeaders);
 
 			return serializedResponse;
 		}
@@ -220,8 +232,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 			byte[] byteData = encoder.Encode(data);
 
-			state.WorkSocket.BeginSend(byteData, 0, byteData.Length, 0,
-				new AsyncCallback(OnSendCompleted), state);
+			state.WorkSocket.BeginSend(byteData, 0, byteData.Length, 0, OnSendCompleted, state);
 		}
 
 		private static void OnSendCompleted(IAsyncResult ar)
@@ -237,8 +248,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				if (state.ProtocolState != null)
 				{
 					state.StringBuilder.Clear();
-					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
-						new AsyncCallback(OnDataReceived), state);
+					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
 				}
 				else
 				{

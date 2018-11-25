@@ -10,10 +10,12 @@ namespace LazyTransportProtocol.Core.Domain.Abstractions.Requests
 	/// <summary>
 	/// Request handler
 	/// </summary>
-	public interface IRequestHandler<in TRequest, out TResponse>
+	public interface IRequestHandler<TRequest, TResponse>
 		where TRequest : IRequest<TResponse>
-		where TResponse : class, IResponse
+		where TResponse : IResponse
 	{
 		TResponse GetResponse(TRequest request);
+
+		Task<TResponse> GetResponseAsync(TRequest request, CancellationToken cancellationToken);
 	}
 }

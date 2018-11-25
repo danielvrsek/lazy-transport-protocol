@@ -24,7 +24,7 @@ namespace LazyTransportProtocol.Client.Model
 		private readonly string[] _argumentNames = null;
 		private readonly int _index = -1;
 
-		private Action<string, TModel> _assignAction;
+		private readonly Action<string, TModel> _assignAction;
 		private Action<TModel> _onEmpty;
 
 		public Argument(Action<string, TModel> assignAction, params string[] argumentNames)
@@ -41,14 +41,9 @@ namespace LazyTransportProtocol.Client.Model
 
 		public bool Process(string[] parameters, TModel model)
 		{
-			if (parameters.Length == 0)
-			{
-				return false;
-			}
-
 			bool isEmpty = true;
 
-			if (_index > 0)
+			if (_index >= 0)
 			{
 				if (parameters.Length > _index)
 				{
@@ -69,7 +64,7 @@ namespace LazyTransportProtocol.Client.Model
 					}
 				}
 
-				if (argumentIndex > 0)
+				if (argumentIndex >= 0)
 				{
 					if (parameters.Length > argumentIndex + 1 || IsArgument(parameters[argumentIndex + 1]))
 					{
@@ -88,7 +83,7 @@ namespace LazyTransportProtocol.Client.Model
 				return true;
 			}
 
-			return false;
+			return !isEmpty;
 		}
 
 		public Argument<TModel> PromtIfEmpty(string title, bool secure = false)

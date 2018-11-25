@@ -9,7 +9,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 {
 	public class AcknowledgementResponse : IProtocolResponse
 	{
-		public const string Identifier = "ACK";
+		public const string Identifier = "ACKRESP";
 
 		public int Code { get; set; }
 

@@ -1,14 +1,11 @@
 ﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
-using LazyTransportProtocol.Core.Application.Protocol.Services;
-using LazyTransportProtocol.Core.Application.Transport;
-using LazyTransportProtocol.Core.Application.Transport.Responses;
-using LazyTransportProtocol.Core.Domain.Abstractions;
-using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 {
@@ -22,6 +19,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 			{
 				Code = 200
 			};
+		}
+
+		public Task<AcknowledgementResponse> GetResponseAsync(HandshakeRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

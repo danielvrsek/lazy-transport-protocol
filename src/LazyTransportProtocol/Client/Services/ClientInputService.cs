@@ -3,6 +3,7 @@ using LazyTransportProtocol.Client.Helpers;
 using LazyTransportProtocol.Client.Metadata;
 using LazyTransportProtocol.Client.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Flow;
+using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Client;
 using System;
 using System.Collections.Generic;
@@ -19,47 +20,57 @@ namespace LazyTransportProtocol.Client.Services
 
 		public ClientInputService()
 		{
-			Action<string, DownloadFileClientInputModel> localFileAssignment = (param, model) => model.LocalFile = param;
-			Action<string, DownloadFileClientInputModel> remoteFileAssignment = (param, model) => model.RemoteFile = param;
-			Action<string, ChangeDirectoryClientInputModel> cdPathAssignment = (param, model) => model.Path = param;
-			Action<string, ListDirectoryClientInputModel> lsPathAssignment = (param, model) => model.Path = param;
-
-
-			_commandDictionary[CommandNameMetadata.Download] = new ArgumentClientInput<DownloadFileClientInputModel>(model => _clientFlowService.DownloadFile(model.LocalFile, model.RemoteFile))
+			_commandDictionary[CommandNameMetadata.Download] = new ArgumentClientInput<DownloadFileClientInputModel>(model => _clientFlowService.DownloadFile(model.RemoteFile, model.LocalFile))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create(localFileAssignment, "-l", "-local"),
-						Argument.Create(localFileAssignment, 0)
-							.PromtIfEmpty("Local file: ")))
+						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "-remote"),
+						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, 0)
+							.PromtIfEmpty("Remote file")))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create(remoteFileAssignment, "-r", "-remote"),
-						Argument.Create(remoteFileAssignment, 0)
-							.PromtIfEmpty("Remote file: ")))
-				.Execute;
+						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "-local"),
+						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, 1)
+							.PromtIfEmpty("Local file"))).Execute;
 
 			_commandDictionary[CommandNameMetadata.ChangeDirectory] = new ArgumentClientInput<ChangeDirectoryClientInputModel>(model => _clientFlowService.ChangeDirectory(model.Path))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create(cdPathAssignment, "-p", "-path"),
-						Argument.Create(cdPathAssignment, 0)))
-				.Execute;
+						Argument.Create<ChangeDirectoryClientInputModel>((param, model) => model.Path = param, "-p", "-path"),
+						Argument.Create<ChangeDirectoryClientInputModel>((param, model) => model.Path = param, 0))).Execute;
 
 			_commandDictionary[CommandNameMetadata.ListDirectory] = new ArgumentClientInput<ListDirectoryClientInputModel>(model => _clientFlowService.ListDirectory(model.Path))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create(lsPathAssignment, "-p", "-path"),
-						Argument.Create(lsPathAssignment, 0)))
-				.Execute;
+						Argument.Create<ListDirectoryClientInputModel>((param, model) => model.Path = param, "-p", "-path"),
+						Argument.Create<ListDirectoryClientInputModel>((param, model) => model.Path = param, 0)
+							.SetDefaultValue(""))).Execute;
 
-			_commandDictionary[CommandNameMetadata.Authenticate] = new ArgumentClientInput<AuthenticateClientInputModel>(model => _clientFlowService.ListDirectory(model.Path))
+			_commandDictionary[CommandNameMetadata.Connect] = new ArgumentClientInput<ConnectClientInputModel>(ConnectHandler)
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<ConnectClientInputModel>((param, model) => model.IpAddress = param, "-ip"),
+						Argument.Create<ConnectClientInputModel>((param, model) => model.IpAddress = param, 0)
+							.PromtIfEmpty("Remote host")))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<ConnectClientInputModel>((param, model) => model.Port = param, "-p"),
+						Argument.Create<ConnectClientInputModel>((param, model) => model.Port = param, 1)
+							.PromtIfEmpty("Remote port"))).Execute;
+
+			_commandDictionary[CommandNameMetadata.Upload] = new ArgumentClientInput<UploadFileClientInputModel>(model => _clientFlowService.UploadFile(model.LocalFile, model.RemoteFile))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "-local"),
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, 0)
+							.PromtIfEmpty("Local file")))
+				.RegisterArgument(
+					ArgumentCondition.Or(
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "-remote"),
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, 1)
+							.PromtIfEmpty("Remote file"))).Execute;
 
 			_commandDictionary[CommandNameMetadata.Authenticate] = AuthenticateHandler;
-			_commandDictionary[CommandNameMetadata.Connect] = ConnectHandler;
 			_commandDictionary[CommandNameMetadata.User] = UserHandler;
-			//_commandDictionary[CommandNameMetadata.Download] = DownloadFileHandler;
-
-			
 		}
 
 		public void Execute(string commandRequest)
@@ -95,59 +106,20 @@ namespace LazyTransportProtocol.Client.Services
 			}
 		}
 
-		private void ConnectHandler(string[] parameters)
+		private void ConnectHandler(ConnectClientInputModel model)
 		{
-			string ipString = null;
-			string portString = null;
-
-			if (parameters.Length > 0)
-			{
-				ipString = parameters[0];
-			}
-			else
-			{
-				Console.Write("Remote host IP: ");
-				ipString = Console.ReadLine();
-			}
-
-			// Deserialize IP 
-			if (ipString.Contains(':'))
-			{
-				string[] flags = ipString.Split(':');
-
-				if (String.IsNullOrWhiteSpace(flags[1]))
-				{
-					throw new CommandException("Port number missing.");
-				}
-
-				ipString = flags[0];
-				portString = flags[1];
-			}
-			else
-			{
-				if (parameters.Length >= 1)
-				{
-					portString = parameters[1];
-				}
-				else
-				{
-					Console.WriteLine("Port: ");
-					portString = Console.ReadLine();
-				}
-			}
-
-			if (String.IsNullOrWhiteSpace(ipString))
+			if (String.IsNullOrWhiteSpace(model.IpAddress))
 			{
 				throw new CommandException("IP adress cannot be empty.");
 			}
 
-			if (!Int32.TryParse(portString, out int port))
+			if (!Int32.TryParse(model.Port, out int port))
 			{
 				throw new CommandException("Could not parse port number.");
 			}
 
-			Console.WriteLine($"Connecting to remote host {ipString} at {portString} ...");
-			_clientFlowService.Connect(ipString, port);
+			Console.WriteLine($"Connecting to remote host {model.IpAddress} at {model.Port} ...");
+			_clientFlowService.Connect(model.IpAddress, port);
 
 			Execute(CommandNameMetadata.Authenticate);
 		}
