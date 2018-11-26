@@ -3,23 +3,43 @@ using LazyTransportProtocol.Client.Services;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Response;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace LazyTransportProtocol.Client
 {
 	internal class Program
 	{
+		private static ClientInputService clientInputService = new ClientInputService();
+
 		private static void Main(string[] args)
 		{
-			ClientInputService clientInputService = new ClientInputService();
 
 			Console.WriteLine("LazyTransportProtocol client v0.9");
 			Console.WriteLine();
 
+			List<string> commands = new List<string>();
+
+			foreach (string c in args)
+			{
+				if (c.StartsWith('/'))
+				{
+					commands.Add(c.Substring(1, c.Length - 1));
+				}
+				else if (commands.Any())
+				{
+					commands[commands.Count - 1] = commands[commands.Count - 1] + " " + c;
+				}
+			}
+
+			foreach (var command in commands)
+			{
+				ExecuteCommand(command);
+			}
+
 			string commandRequest;
 
-			clientInputService.Execute("connect 192.168.0.102 1234");
-
-			while (true)
+			do
 			{
 				if (clientInputService.Username != null && clientInputService.Host != null)
 				{
@@ -28,35 +48,35 @@ namespace LazyTransportProtocol.Client
 
 				Console.Write('>');
 				commandRequest = Console.ReadLine();
-
-				if (commandRequest == "exit")
-				{
-					break;
-				}
-
-				try
-				{
-					clientInputService.Execute(commandRequest);
-				}
-				catch (CommandException commandException)
-				{
-					Console.WriteLine(commandException.Message);
-				}
-				catch (InvalidResponseException)
-				{
-					Console.WriteLine("Invalid response from server.");
-				}
-				catch (CustomException e)
-				{
-					Console.WriteLine("Error occured: " + e.Message);
-				}
-				catch (Exception e)
-				{
-					Console.WriteLine(e.Message);
-					Console.ReadLine();
-					break;
-				}
 			}
+			while (ExecuteCommand(commandRequest));
+		}
+
+		private static bool ExecuteCommand(string commandRequest)
+		{
+			try
+			{
+				return clientInputService.Execute(commandRequest);
+			}
+			catch (CommandException commandException)
+			{
+				Console.WriteLine(commandException.Message);
+			}
+			catch (InvalidResponseException)
+			{
+				Console.WriteLine("Invalid response from server.");
+			}
+			catch (CustomException e)
+			{
+				Console.WriteLine("Error occured: " + e.Message);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+				Console.ReadLine();
+			}
+
+			return false;
 		}
 	}
 }

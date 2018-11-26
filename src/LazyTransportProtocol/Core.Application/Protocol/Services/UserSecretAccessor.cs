@@ -11,31 +11,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class UserSecretAccessor : IUserSecretAccessor
 	{
-		private readonly string _filename;
-		private readonly string _path;
-
-		private string FullPath
-		{
-			get
-			{
-				return Path.Combine(_path, _filename);
-			}
-		}
+		private readonly string _filePath;
 
 		#region ..ctors
 
-		public UserSecretAccessor() : this(ServerConfiguration.UserSecretFilename)
+		public UserSecretAccessor() : this(ServerConfiguration.UserSecretFilepath)
 		{
 		}
 
-		public UserSecretAccessor(string filename) : this(filename, ServerConfiguration.UserSecretFilePath)
+		public UserSecretAccessor(string filePath)
 		{
-		}
-
-		public UserSecretAccessor(string filename, string path)
-		{
-			this._filename = filename;
-			this._path = path;
+			_filePath = filePath;
 		}
 
 		#endregion ..ctors
@@ -51,7 +37,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			EnsureFileExists();
 
-			using (StreamWriter sw = new StreamWriter(FullPath, true))
+			using (StreamWriter sw = new StreamWriter(_filePath, true))
 			{
 				sw.WriteLine(SerializeSecret(secretInfo));
 			}
@@ -65,14 +51,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 			string[] lines;
 
-			using (StreamReader sr = new StreamReader(FullPath))
+			using (StreamReader sr = new StreamReader(_filePath))
 			{
 				lines = sr.ReadToEnd().Split(Environment.NewLine);
 			}
 
 			string[] newLines = lines.Where(x => !x.StartsWith(username)).ToArray();
 
-			using (StreamWriter sw = new StreamWriter(FullPath, false))
+			using (StreamWriter sw = new StreamWriter(_filePath, false))
 			{
 				foreach(string line in newLines)
 				{
@@ -99,7 +85,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 			string fileContents = null;
 
-			using (StreamReader sr = new StreamReader(FullPath))
+			using (StreamReader sr = new StreamReader(_filePath))
 			{
 				fileContents = sr.ReadToEnd();
 			}
@@ -127,9 +113,15 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		private void EnsureFileExists()
 		{
-			if (!File.Exists(FullPath))
+			if (!File.Exists(_filePath))
 			{
-				using (StreamWriter file = new StreamWriter(FullPath))
+				string directoryName = Path.GetDirectoryName(_filePath);
+				if (!Directory.Exists(directoryName))
+				{
+					Directory.CreateDirectory(directoryName);
+				}
+
+				using (StreamWriter file = new StreamWriter(_filePath))
 				{
 					file.WriteLine("#########");
 				}

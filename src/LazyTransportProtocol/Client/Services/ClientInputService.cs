@@ -60,7 +60,8 @@ namespace LazyTransportProtocol.Client.Services
 					ArgumentCondition.Or(
 						Argument.Create<ConnectClientInputModel>((param, model) => model.Port = param, "-p"),
 						Argument.Create<ConnectClientInputModel>((param, model) => model.Port = param, 1)
-							.PromtIfEmpty("Remote port"))).Execute;
+							.PromtIfEmpty("Remote port")))
+				.RegisterArgument(Option.Create<ConnectClientInputModel>((param, model) => model.ForceLogin = !param, "--no-login")).Execute;
 
 			_commandDictionary[CommandNameMetadata.Upload] = new ArgumentClientInput<UploadFileClientInputModel>(model => _clientFlowService.UploadFile(model.LocalFile, model.RemoteFile))
 				.RegisterArgument(
@@ -81,10 +82,15 @@ namespace LazyTransportProtocol.Client.Services
 			_commandDictionary[CommandNameMetadata.User] = UserHandler;
 		}
 
-		public void Execute(string commandRequest)
+		public bool Execute(string commandRequest)
 		{
 			List<string> flags = ParseArguments(commandRequest);
 			string command = flags[0];
+
+			if (command == "exit")
+			{
+				return false;
+			}
 
 			if (!_commandDictionary.ContainsKey(command))
 			{
@@ -106,6 +112,7 @@ namespace LazyTransportProtocol.Client.Services
 			try
 			{
 				_commandDictionary[command](parameters);
+				return true;
 			}
 			catch (ConnectionRequiredException)
 			{
@@ -128,29 +135,39 @@ namespace LazyTransportProtocol.Client.Services
 			Console.WriteLine($"Connecting to remote host {model.IpAddress} at {model.Port} ...");
 			_clientFlowService.Connect(model.IpAddress, port);
 
-			Execute(CommandNameMetadata.Authenticate);
+			if (model.ForceLogin)
+			{
+				Execute(CommandNameMetadata.Authenticate + " --force");
+			}
 		}
 
 		private void AuthenticateHandler(string[] parameters)
 		{
 			string username = null;
 			string password = null;
+			bool force = parameters.Contains("--force");
 
 			GetUsernameAndPassword(parameters, ref username, ref password);
 
-			if (String.IsNullOrWhiteSpace(username) || String.IsNullOrWhiteSpace(password))
-			{
-				throw new CommandException("Username and password cannot be empty.");
-			}
-
 			Console.WriteLine("Authenticating user " + username + "...");
-			while (!_clientFlowService.Authenticate(username, password))
+
+			bool isSuccess;
+			while (!(isSuccess = _clientFlowService.Authenticate(username, password)) && force)
 			{
+				Console.WriteLine("Authentication failed.");
+
 				// Force new credetials
 				GetUsernameAndPassword(new string[0], ref username, ref password);
 			}
 
-			Console.WriteLine("Authentication successful.");
+			if (isSuccess)
+			{
+				Console.WriteLine("Authentication successful.");
+			}
+			else
+			{
+				Console.WriteLine("Authentication failed.");
+			}
 		}
 
 		private void GetUsernameAndPassword(string[] parameters, ref string username, ref string password)
@@ -173,6 +190,11 @@ namespace LazyTransportProtocol.Client.Services
 			{
 				Console.Write("Password: ");
 				password = ConsoleHelper.ReadSecureString();
+			}
+
+			if (String.IsNullOrWhiteSpace(username) || String.IsNullOrWhiteSpace(password))
+			{
+				throw new CommandException("Username and password cannot be empty.");
 			}
 		}
 

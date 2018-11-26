@@ -2,7 +2,6 @@
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
-using LazyTransportProtocol.Core.Application.Protocol.Metadata;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
@@ -10,13 +9,9 @@ using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
-using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
-using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
-using LazyTransportProtocol.Core.Domain.Exceptions.Request;
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -31,9 +26,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 	{
 		private static ManualResetEvent allDone = new ManualResetEvent(false);
 
-		public void Listen(int port)
+		private static ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
+		private const string eof = "<EOF>";
+
+		public void Listen(IPAddress ipAddress, int port)
 		{
-			IPAddress ipAddress = IPAddress.Parse("192.168.0.102");
 			IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
 
 			Socket listener = new Socket(ipAddress.AddressFamily,
@@ -73,7 +70,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		{
 			try
 			{
-				string eof = "<EOF>";
 
 				IDecoder decoder = new ProtocolDecoder();
 
@@ -126,7 +122,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			MediumDeserializedObject requestObject = ProtocolDeserializer.Deserialize(requestString, handshakeHeaders, handshakeProtocol);
 
 			HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
-			var response = new ProtocolRequestExecutor().Execute(request);
+			var response = executor.Execute(request);
 
 			if (response.IsSuccessful)
 			{
@@ -153,7 +149,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
 
 			MediumDeserializedObject requestObject = ProtocolDeserializer.Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
-			ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
 
 			IProtocolResponse protocolResponse = null;
 			IProtocolRequest<IProtocolResponse> request = null;
@@ -162,14 +157,20 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			{
 				if (requestObject.ControlCommand != AuthenticationRequest.Identifier)
 				{
-					throw new AuthorizationException();
+					protocolResponse = new ErrorResponse
+					{
+						Code = 500,
+						Message = "Unauthorized."
+					};
 				}
-
-				Deserialize<AuthenticationRequest>();
-
-				if (request.AuthenticationContext != null)
+				else
 				{
-					connectionState.AuthenticationContext = request.AuthenticationContext;
+					Deserialize<AuthenticationRequest>();
+
+					if (request.AuthenticationContext != null)
+					{
+						connectionState.AuthenticationContext = request.AuthenticationContext;
+					}
 				}
 			}
 			else
@@ -206,7 +207,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 						protocolResponse = new ErrorResponse
 						{
 							Code = 500,
-							Message = "Unsupported request"
+							Message = "Unsupported request."
 						};
 						break;
 				}

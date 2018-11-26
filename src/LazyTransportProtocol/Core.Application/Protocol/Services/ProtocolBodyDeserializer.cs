@@ -18,10 +18,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			}
 
 			IDecoder decoder = new ProtocolDecoder();
-
 			string decoded = decoder.Decode(Convert.FromBase64String(requestBody));
-
-			//Console.WriteLine(decoded);
 
 			return JsonConvert.DeserializeObject<T>(decoded);
 		}

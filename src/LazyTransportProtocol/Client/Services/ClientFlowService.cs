@@ -91,7 +91,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			});
 
 			List<string> names = response.RemoteDirectories.Select(x => x.Name).ToList();
-
 			names.AddRange(response.RemoteFiles.Select(x => x.Filename));
 
 			Console.WriteLine(String.Join(", ", names));
@@ -111,9 +110,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 		{
 			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
 
-			int index = 0;
+			long elapsed = 0;
 			int offset = 0;
-			int count = 15000;
+			int count = 1024 * 1024;
 
 			string remoteDirectory = Path.GetDirectoryName(remoteFilepath);
 			string remoteFilename = Path.GetFileName(remoteFilepath);
@@ -139,7 +138,10 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			var sw = Stopwatch.StartNew();
 			try
 			{
-				File.Delete(localFilepath);
+				if (File.Exists(localFilepath))
+				{
+					File.Delete(localFilepath);
+				}
 
 				using (FileStream fs = File.OpenWrite(localFilepath))
 				using (BinaryWriter bw = new BinaryWriter(fs))
@@ -157,12 +159,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 
 						offset += response.Data.Length;
 
-						if (index % 10 == 0 || !response.HasNext)
+						if (sw.ElapsedMilliseconds - elapsed > 70 || !response.HasNext)
 						{
 							WriteStatus("Downloading...", offset, remoteFileInfo.Size);
+							elapsed = sw.ElapsedMilliseconds;
 						}
-
-						index++;
 					}
 					while (response.HasNext);
 				}

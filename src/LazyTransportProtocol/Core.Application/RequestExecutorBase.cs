@@ -11,27 +11,22 @@ namespace LazyTransportProtocol.Core.Application
 {
 	public abstract class RequestExecutorBase : IRequestExecutor
 	{
-		public static object _lock = new object();
+		protected Dictionary<Type, RequestHandlerDelegate<IRequest<IResponse>, IResponse>> _requestHandlerDictionary = new Dictionary<Type, RequestHandlerDelegate<IRequest<IResponse>, IResponse>>();
 
-		protected static Dictionary<Type, RequestHandlerDelegate<IRequest<IResponse>, IResponse>> _requestHandlerDictionary = new Dictionary<Type, RequestHandlerDelegate<IRequest<IResponse>, IResponse>>();
-
-		public static IPipelineBuilder<TRequest> Register<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> requestHandler)
+		public IPipelineBuilder<TRequest> Register<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> requestHandler)
 			where TRequest : IRequest<TResponse>
 			where TResponse : class, IResponse
 		{
 			IPipelineBuilder<TRequest> requestPipelineBuilder = new BasicRequestPipelineBuilder<TRequest>();
 
-			lock (_lock)
+			// Register delegate - don't execute
+			_requestHandlerDictionary[typeof(TRequest)] = (request) =>
 			{
-				// Register delegate - don't execute
-				_requestHandlerDictionary[typeof(TRequest)] = (request) =>
-				{
-					// Execute pipeline
-					request = requestPipelineBuilder.Build().ExecutePipelineQueue((TRequest)request);
+				// Execute pipeline
+				request = requestPipelineBuilder.Build().ExecutePipelineQueue((TRequest)request);
 
-					return requestHandler.GetResponse((TRequest)request);
-				};
-			}
+				return requestHandler.GetResponse((TRequest)request);
+			};
 
 			return requestPipelineBuilder;
 		}
@@ -46,10 +41,7 @@ namespace LazyTransportProtocol.Core.Application
 		{
 			RequestHandlerDelegate<IRequest<IResponse>, IResponse> handlerDelegate;
 
-			lock (_lock)
-			{
-				handlerDelegate = _requestHandlerDictionary[request.GetType()];
-			}
+			handlerDelegate = _requestHandlerDictionary[request.GetType()];
 
 			return (TResponse)handlerDelegate(request);
 		}
