@@ -6,6 +6,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +37,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 		{
 			return IOService.GetFiles(path).Select(x => new RemoteFile
 			{
-				Filename = x
+				Filename = x,
+				Size = (int)IOService.GetFileInfo(Path.Combine(path, x)).Length
 			}).ToList();
 		}
 

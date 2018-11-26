@@ -2,18 +2,17 @@
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class HandshakeRequest : IProtocolRequest<AcknowledgementResponse>
+	public class CreateDirectoryRequest : IProtocolRequest<AcknowledgementResponse>
 	{
-		public const string Identifier = "HANDSHAKE";
+		public const string Identifier = "MKDIR";
 
-		public string ProtocolVersion { get; set; }
-
-		public int BufferSize { get; set; }
-
-		public string Separator { get; set; }
+		public string Path { get; set; }
 
 		public IAuthenticationContext AuthenticationContext { get; set; }
 

@@ -45,6 +45,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					new BasicRequestValidatorBuilder<UploadFileRequest>()
 						.AddPropertyValidator(x => x.Path, new NotNullOrEmptyValidator())
 						.Build());
+
+			Register(new CreateDirectoryRequestHandler());
 		}
 	}
 }

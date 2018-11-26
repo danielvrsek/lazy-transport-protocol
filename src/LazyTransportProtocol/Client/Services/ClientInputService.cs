@@ -15,33 +15,38 @@ namespace LazyTransportProtocol.Client.Services
 	public class ClientInputService
 	{
 		private readonly Dictionary<string, Action<string[]>> _commandDictionary = new Dictionary<string, Action<string[]>>();
-
 		private readonly ClientFlowService _clientFlowService = new ClientFlowService();
+
+		public string Host => _clientFlowService.Host;
+
+		public string Username => _clientFlowService.Username;
+
+		public string CurrentFolder => _clientFlowService?.CurrentFolder;
 
 		public ClientInputService()
 		{
 			_commandDictionary[CommandNameMetadata.Download] = new ArgumentClientInput<DownloadFileClientInputModel>(model => _clientFlowService.DownloadFile(model.RemoteFile, model.LocalFile))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "-remote"),
+						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "--remote"),
 						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, 0)
 							.PromtIfEmpty("Remote file")))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "-local"),
+						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "--local"),
 						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, 1)
 							.PromtIfEmpty("Local file"))).Execute;
 
 			_commandDictionary[CommandNameMetadata.ChangeDirectory] = new ArgumentClientInput<ChangeDirectoryClientInputModel>(model => _clientFlowService.ChangeDirectory(model.Path))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<ChangeDirectoryClientInputModel>((param, model) => model.Path = param, "-p", "-path"),
+						Argument.Create<ChangeDirectoryClientInputModel>((param, model) => model.Path = param, "-p", "--path"),
 						Argument.Create<ChangeDirectoryClientInputModel>((param, model) => model.Path = param, 0))).Execute;
 
 			_commandDictionary[CommandNameMetadata.ListDirectory] = new ArgumentClientInput<ListDirectoryClientInputModel>(model => _clientFlowService.ListDirectory(model.Path))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<ListDirectoryClientInputModel>((param, model) => model.Path = param, "-p", "-path"),
+						Argument.Create<ListDirectoryClientInputModel>((param, model) => model.Path = param, "-p", "--path"),
 						Argument.Create<ListDirectoryClientInputModel>((param, model) => model.Path = param, 0)
 							.SetDefaultValue(""))).Execute;
 
@@ -60,14 +65,17 @@ namespace LazyTransportProtocol.Client.Services
 			_commandDictionary[CommandNameMetadata.Upload] = new ArgumentClientInput<UploadFileClientInputModel>(model => _clientFlowService.UploadFile(model.LocalFile, model.RemoteFile))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "-local"),
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "--local"),
 						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, 0)
 							.PromtIfEmpty("Local file")))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<UploadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "-remote"),
-						Argument.Create<UploadFileClientInputModel>((param, model) => model.LocalFile = param, 1)
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "--remote"),
+						Argument.Create<UploadFileClientInputModel>((param, model) => model.RemoteFile = param, 1)
 							.PromtIfEmpty("Remote file"))).Execute;
+
+			_commandDictionary[CommandNameMetadata.CreateDirectory] = new ArgumentClientInput<CreateDirectoryClientInputModel>(model => _clientFlowService.CreateDirectory(model.FullPath))
+				.RegisterArgument(Argument.Create<CreateDirectoryClientInputModel>((param, model) => model.FullPath = param, 0)).Execute;
 
 			_commandDictionary[CommandNameMetadata.Authenticate] = AuthenticateHandler;
 			_commandDictionary[CommandNameMetadata.User] = UserHandler;
@@ -180,14 +188,14 @@ namespace LazyTransportProtocol.Client.Services
 				new ArgumentClientInput<CreateUserClientInputModel>(model => _clientFlowService.CreateNewUser(model.Username, model.Password))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<CreateUserClientInputModel>((param, model) => model.Username = param, "-username", "-u"),
+						Argument.Create<CreateUserClientInputModel>((param, model) => model.Username = param, "-u", "--username"),
 						Argument.Create<CreateUserClientInputModel>((param, model) => model.Username = param, 0)
 							.PromtIfEmpty("Username")))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<CreateUserClientInputModel>((param, model) => model.Password = param, "-p", "-password"),
+						Argument.Create<CreateUserClientInputModel>((param, model) => model.Password = param, "-p", "--password"),
 						Argument.Create<CreateUserClientInputModel>((param, model) => model.Password = param, 1)
-							.PromtIfEmpty("Password")))
+							.PromtIfEmpty("Password", true)))
 				.Execute(parameters.Skip(1).ToArray());
 			}
 			else if (parameters[0] == "delete")
@@ -195,7 +203,7 @@ namespace LazyTransportProtocol.Client.Services
 				new ArgumentClientInput<DeleteUserClientInputModel>(model => _clientFlowService.DeleteUser(model.Username))
 				.RegisterArgument(
 					ArgumentCondition.Or(
-						Argument.Create<DeleteUserClientInputModel>((param, model) => model.Username = param, "-username", "-u"),
+						Argument.Create<DeleteUserClientInputModel>((param, model) => model.Username = param, "-u", "--username"),
 						Argument.Create<DeleteUserClientInputModel>((param, model) => model.Username = param, 0)
 							.PromtIfEmpty("Username")))
 				.Execute(parameters.Skip(1).ToArray());

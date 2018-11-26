@@ -1,12 +1,16 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
+﻿using LazyTransportProtocol.Core.Application.Helpers;
+using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 {
@@ -14,7 +18,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 	{
 		private readonly IRemoteRequestExecutor remoteExecutor = new SocketProtocolRequestExecutor();
 
-		private string _currentFolder = "/";
+		public string Host { get; private set; }
+
+		public string Username { get; private set; }
+
+		public string CurrentFolder { get; private set; } = "/";
 
 		public void Connect(string ipAdress, int port)
 		{
@@ -23,6 +31,8 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 				IPAddress = ipAdress,
 				Port = port
 			});
+
+			Host = ipAdress;
 		}
 
 		public bool CreateNewUser(string username, string password)
@@ -54,6 +64,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 				Password = password
 			});
 
+			if (response.IsSuccessful)
+			{
+				Username = username;
+			}
+
 			return response.IsSuccessful;
 		}
 
@@ -63,11 +78,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 
 			if (String.IsNullOrEmpty(folder))
 			{
-				path = _currentFolder;
+				path = CurrentFolder;
 			}
 			else
 			{
-				path = Path.IsPathRooted(folder) ? folder : Path.Combine(_currentFolder, folder);
+				path = Path.IsPathRooted(folder) ? folder : Path.Combine(CurrentFolder, folder);
 			}
 
 			var response = remoteExecutor.Execute(new ListDirectoryClientRequest
@@ -82,17 +97,50 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			Console.WriteLine(String.Join(", ", names));
 		}
 
+		public void CreateDirectory(string path)
+		{
+			path = Path.IsPathRooted(path) ? path : Path.Combine(CurrentFolder, path);
+
+			var response = remoteExecutor.Execute(new CreateDirectoryRequest
+			{
+				Path = path
+			});
+		}
+
 		public void DownloadFile(string remoteFilepath, string localFilepath)
 		{
-			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(_currentFolder, remoteFilepath);
+			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
 
+			int index = 0;
 			int offset = 0;
 			int count = 15000;
 
+			string remoteDirectory = Path.GetDirectoryName(remoteFilepath);
+			string remoteFilename = Path.GetFileName(remoteFilepath);
+
+			var lsResponse = remoteExecutor.Execute(new ListDirectoryClientRequest
+			{
+				Path = remoteDirectory
+			});
+
+			RemoteFile remoteFileInfo = lsResponse.RemoteFiles.FirstOrDefault(x => x.Filename == remoteFilename);
+
+			if (remoteFileInfo == null)
+			{
+				throw new CustomException("File does not exist on the remote machine.");
+			}
+
+			Console.CursorVisible = false;
+
+			WriteStatus("Downloading...", offset, remoteFileInfo.Size);
+
 			DownloadFileResponse response;
 
+			var sw = Stopwatch.StartNew();
 			try
 			{
+				File.Delete(localFilepath);
+
 				using (FileStream fs = File.OpenWrite(localFilepath))
 				using (BinaryWriter bw = new BinaryWriter(fs))
 				{
@@ -105,11 +153,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 							Count = count
 						});
 
-						byte[] data = Convert.FromBase64String(response.Data);
+						bw.Write(response.Data);
 
-						bw.Write(data);
+						offset += response.Data.Length;
 
-						offset += count;
+						if (index % 10 == 0 || !response.HasNext)
+						{
+							WriteStatus("Downloading...", offset, remoteFileInfo.Size);
+						}
+
+						index++;
 					}
 					while (response.HasNext);
 				}
@@ -118,16 +171,90 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			{
 				throw new CustomException(e.Message);
 			}
+			finally
+			{
+				Console.CursorVisible = true;
+				Console.WriteLine();
+				Console.WriteLine(sw.ElapsedMilliseconds);
+			}
 		}
 
-		public void UploadFile(string localFile, string remoteFile)
+		public void WriteStatus(string label, long downloaded, long totalSize)
 		{
-			throw new NotImplementedException();
+			int statusLength = 50;
+			double percentage = (double)downloaded / totalSize;
+			int completed = (int)(percentage * statusLength);
+
+			label = $"{label} {percentage.ToString("P").PadLeft(8)}";
+			string status = "[" + "".PadLeft(completed, '%').PadRight(statusLength, ' ') + "]";
+
+			Console.SetCursorPosition(0, Console.CursorTop);
+			Console.Write(label + "  " + status);
+		}
+
+		public void UploadFile(string localFilepath, string remoteFilepath)
+		{
+			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
+
+			int count = 15000;
+			int offset = 0;
+			int index = 0;
+
+			FileInfo localFileInfo = new FileInfo(localFilepath);
+			long localFileSize = localFileInfo.Length;
+
+			Console.CursorVisible = false;
+			WriteStatus("Uploading...", 0, localFileSize);
+
+			AcknowledgementResponse response;
+			byte[] buffer;
+			object obj = new object();
+
+			try
+			{
+				using (FileStream fs = File.OpenRead(localFilepath))
+				using (BinaryReader br = new BinaryReader(fs))
+				{
+					do
+					{
+						buffer = br.ReadBytes(count);
+
+						response = remoteExecutor.Execute(new UploadFileRequest
+						{
+							Path = remoteFilepath,
+							Data = buffer,
+							Offset = offset
+						});
+
+						offset += buffer.Length;
+
+						if (!response.IsSuccessful)
+						{
+							throw new CustomException("Error while uploading.");
+						}
+
+						if (index % 10 == 0 || buffer.Length != count)
+						{
+							WriteStatus("Uploading...", offset, localFileSize);
+						}
+					}
+					while (buffer.Length == count);
+				}
+			}
+			catch (IOException e)
+			{
+				throw new CustomException(e.Message);
+			}
+			finally
+			{
+				Console.CursorVisible = true;
+				Console.WriteLine();
+			}
 		}
 
 		public void ChangeDirectory(string folder)
 		{
-			_currentFolder = Path.IsPathRooted(folder) ? folder : Path.Combine(_currentFolder, folder);
+			CurrentFolder = Path.IsPathRooted(folder) ? folder : Path.Combine(CurrentFolder, folder);
 		}
 
 		public void Disconnect()

@@ -30,18 +30,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			 return combined;
 		}
 
-		public static string CreateDirectory(string path, string directoryName)
+		public static string CreateDirectory(string path)
 		{
 			string systemPath = TransformPath(path);
 
-			if (directoryName.Contains('\\') || directoryName.Contains('/'))
-			{
-				throw new ArgumentException("Invalid directory name.");
-			}
-
-			string fullPath = Path.Combine(systemPath, directoryName);
-
-			DirectoryInfo directoryInfo = Directory.CreateDirectory(fullPath);
+			DirectoryInfo directoryInfo = Directory.CreateDirectory(systemPath);
 
 			return directoryInfo.FullName;
 		}
@@ -61,7 +54,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			Directory.Delete(systemPath, recursive);
 		}
 
-		public static Span<byte> ReadFile(string fullpath, int offset, int count)
+		public static bool FileExists(string filepath)
+		{
+			string systemPath = TransformPath(filepath);
+
+			return File.Exists(systemPath);
+		}
+
+		public static byte[] ReadFile(string fullpath, int offset, int count)
 		{
 			string systemPath = TransformPath(fullpath);
 
@@ -76,10 +76,15 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 				bytesRead = binaryReader.Read(buffer, 0, count);
 			}
 
-			return new Span<byte>(buffer, 0, bytesRead);
+			if (bytesRead < buffer.Length)
+			{
+				Array.Resize(ref buffer, bytesRead);
+			}
+
+			return buffer;
 		}
 
-		public static void AppendFile(string filePath, byte[] data, bool createIfNotExists = true)
+		public static void AppendFile(string filePath, byte[] data, int offset, bool createIfNotExists = true)
 		{
 			string systemPath = TransformPath(filePath);
 
@@ -90,6 +95,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 			using (FileStream fs = File.OpenWrite(systemPath))
 			{
+				fs.Position = offset;
 				fs.Write(data, 0, data.Length);
 			}
 		}
@@ -121,15 +127,21 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateDirectories(systemPath).Select(x => Path.GetRelativePath(ServerConfiguration.RootFolder, x)).ToArray();
+			return Directory.EnumerateDirectories(systemPath).Select(x => Path.GetRelativePath(systemPath, x)).ToArray();
 		}
 
 		public static string[] GetFiles(string path)
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateFiles(systemPath).Select(x => Path.GetRelativePath(ServerConfiguration.RootFolder, x)).ToArray();
+			return Directory.EnumerateFiles(systemPath).Select(x => Path.GetRelativePath(systemPath, x)).ToArray();
 		}
 
+		public static FileInfo GetFileInfo(string filePath)
+		{
+			string systemPath = TransformPath(filePath);
+
+			return new FileInfo(systemPath);
+		}
 	}
 }

@@ -4,6 +4,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +19,13 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 
 			try
 			{
-				IOService.AppendFile(request.Path, request.Data);
+				if (request.Offset == 0 && IOService.FileExists(request.Path))
+				{
+					IOService.DeleteFile(request.Path);
+				}
+
+				IOService.AppendFile(request.Path, request.Data, request.Offset);
+
 				code = 200;
 			}
 			catch

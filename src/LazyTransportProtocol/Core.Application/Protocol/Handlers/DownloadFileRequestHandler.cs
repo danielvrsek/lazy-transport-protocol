@@ -22,11 +22,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 				throw new AuthorizationException();
 			}
 
-			Span<byte> data = IOService.ReadFile(request.Filepath, request.Offset, request.Count);
+			byte[] data = IOService.ReadFile(request.Filepath, request.Offset, request.Count);
 
 			return new DownloadFileResponse
 			{
-				Data = Convert.ToBase64String(data),
+				Data = data,
 				HasNext = data.Length == request.Count
 			};
 		}

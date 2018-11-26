@@ -10,7 +10,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 	{
 		public const string Identifier = "DOWNFILERESP";
 
-		public string Data { get; set; }
+		public byte[] Data { get; set; }
 
 		public bool HasNext { get; set; }
 

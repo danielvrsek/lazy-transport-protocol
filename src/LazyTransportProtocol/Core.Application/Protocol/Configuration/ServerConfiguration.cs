@@ -6,7 +6,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Configuration
 {
 	public static class ServerConfiguration
 	{
-		public const string RootFolder = "C:\\Users\\Public\\LTP";
+		public const string RootFolder = "LTP";
 
 		public const string UserSecretFilePath = "";
 

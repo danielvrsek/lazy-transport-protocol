@@ -31,7 +31,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		private const string _separator = ";";
 		private readonly ProtocolVersion _protocolVersion = ProtocolVersion.V1_0;
-		private const int _maxRequestLength = 16384;
+		private const int _maxRequestLength = 2048;
 
 		public void Connect(IRemoteConnectionParameters parameters)
 		{
@@ -40,6 +40,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		public void Connect(SocketConnectionParameters parameters)
 		{
+			if (_connection != null)
+			{
+				_connection.Disconnect();
+			}
+
 			_connection = _transport.Connect(parameters.IPAddress, parameters.Port);
 			_connection.State = new ProtocolState
 			{
@@ -49,7 +54,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 			AcknowledgementResponse response = Execute(new HandshakeRequest
 			{
-				ProtocolVersion = _protocolVersion,
+				ProtocolVersion = _protocolVersion.ToString(),
 				BufferSize = _maxRequestLength,
 				Separator = _separator
 			});

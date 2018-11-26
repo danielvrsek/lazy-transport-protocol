@@ -10,6 +10,8 @@ namespace LazyTransportProtocol.Client.Metadata
 
 		public const string ChangeDirectory = "cd";
 
+		public const string CreateDirectory = "mkdir";
+
 		public const string Authenticate = "login";
 
 		public const string User = "user";

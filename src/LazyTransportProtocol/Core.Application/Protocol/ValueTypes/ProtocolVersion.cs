@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.ValueTypes
@@ -20,14 +21,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.ValueTypes
 		public int MajorVersion { get; }
 
 		public int MinorVersion { get; }
-
-		public bool IsHandshake
-		{
-			get
-			{
-				return MajorVersion < 0;
-			}
-		}
 
 		public override string ToString()
 		{

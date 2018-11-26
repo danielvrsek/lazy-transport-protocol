@@ -17,8 +17,15 @@ namespace LazyTransportProtocol.Client
 
 			string commandRequest;
 
+			clientInputService.Execute("connect 192.168.0.102 1234");
+
 			while (true)
 			{
+				if (clientInputService.Username != null && clientInputService.Host != null)
+				{
+					Console.Write($"{clientInputService.Username}@{clientInputService.Host}:{clientInputService.CurrentFolder}");
+				}
+
 				Console.Write('>');
 				commandRequest = Console.ReadLine();
 
