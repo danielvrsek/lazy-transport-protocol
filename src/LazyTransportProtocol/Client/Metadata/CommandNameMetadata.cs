@@ -21,5 +21,7 @@ namespace LazyTransportProtocol.Client.Metadata
 		public const string Upload = "upload";
 
 		public const string Download = "download";
+
+		public const string Exit = "exit";
 	}
 }

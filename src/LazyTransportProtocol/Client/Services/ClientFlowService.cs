@@ -1,4 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Helpers;
+﻿using LazyTransportProtocol.Core.Application.Protocol;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
@@ -12,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LazyTransportProtocol.Core.Application.Protocol.Flow
+namespace LazyTransportProtocol.Client.Services
 {
 	public class ClientFlowService
 	{
@@ -176,7 +176,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Flow
 			{
 				Console.CursorVisible = true;
 				Console.WriteLine();
-				Console.WriteLine(sw.ElapsedMilliseconds);
+				//Console.WriteLine(sw.ElapsedMilliseconds);
 			}
 		}
 

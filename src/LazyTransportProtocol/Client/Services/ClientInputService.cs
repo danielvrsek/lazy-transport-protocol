@@ -2,7 +2,6 @@
 using LazyTransportProtocol.Client.Helpers;
 using LazyTransportProtocol.Client.Metadata;
 using LazyTransportProtocol.Client.Model;
-using LazyTransportProtocol.Core.Application.Protocol.Flow;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Client;
 using System;
@@ -89,6 +88,7 @@ namespace LazyTransportProtocol.Client.Services
 
 			if (command == "exit")
 			{
+				_clientFlowService.Disconnect();
 				return false;
 			}
 
@@ -172,7 +172,7 @@ namespace LazyTransportProtocol.Client.Services
 
 		private void GetUsernameAndPassword(string[] parameters, ref string username, ref string password)
 		{
-			if (parameters.Length > 0)
+			if (parameters.Length > 0 && !parameters[0].StartsWith('-'))
 			{
 				username = parameters[0];
 			}
@@ -182,7 +182,7 @@ namespace LazyTransportProtocol.Client.Services
 				username = Console.ReadLine();
 			}
 
-			if (parameters.Length > 1)
+			if (parameters.Length > 1 && !parameters[1].StartsWith('-'))
 			{
 				password = parameters[1];
 			}

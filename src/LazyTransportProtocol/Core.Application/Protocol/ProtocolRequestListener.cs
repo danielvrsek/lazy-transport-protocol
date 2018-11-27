@@ -70,13 +70,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		{
 			try
 			{
-
 				IDecoder decoder = new ProtocolDecoder();
 
 				StateObject state = (StateObject)ar.AsyncState;
 				Socket handler = state.WorkSocket;
 
 				int bytesRead = handler.EndReceive(ar);
+
+				if (bytesRead == 0)
+				{
+					return;
+				}
 
 				string decoded = decoder.Decode(state.Buffer, 0, bytesRead);
 				state.StringBuilder.Append(decoded);
@@ -159,7 +163,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				{
 					protocolResponse = new ErrorResponse
 					{
-						Code = 500,
+						Code = 403,
 						Message = "Unauthorized."
 					};
 				}
@@ -200,13 +204,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					case CreateDirectoryRequest.Identifier:
 						Deserialize<CreateDirectoryRequest>();
 						break;
+
 					case UploadFileRequest.Identifier:
 						Deserialize<UploadFileRequest>();
 						break;
 					default:
 						protocolResponse = new ErrorResponse
 						{
-							Code = 500,
+							Code = 400,
 							Message = "Unsupported request."
 						};
 						break;
@@ -226,7 +231,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				{
 					protocolResponse = new ErrorResponse
 					{
-						Code = 500,
+						Code = 403,
 						Message = "Unauthorized."
 					};
 				}
@@ -234,7 +239,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				{
 					protocolResponse = new ErrorResponse
 					{
-						Code = 500,
+						Code = 400,
 						Message = e.Message
 					};
 				}
@@ -275,7 +280,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				Socket handler = state.WorkSocket;
 
 				int bytesSent = handler.EndSend(ar);
-				//Console.WriteLine("Sent {0} bytes to client.", bytesSent);
 
 				if (state.ProtocolState != null)
 				{
