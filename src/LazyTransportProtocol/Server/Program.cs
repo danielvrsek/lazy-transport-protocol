@@ -1,5 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol;
-using LazyTransportProtocol.Core.Application.Protocol.Configuration;
+﻿using LazyTransportProtocol.Core.Application.Protocol.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -8,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace Server
+namespace LazyTransportProtocol.Server
 {
 	internal class Program
 	{
@@ -17,6 +16,7 @@ namespace Server
 			if (args.Length < 2)
 			{
 				Console.WriteLine("IP adress and/or port missing.");
+				return;
 			}
 
 			if (!IPAddress.TryParse(args[0], out IPAddress ipAddress))

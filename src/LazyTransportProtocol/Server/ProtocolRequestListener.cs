@@ -1,4 +1,5 @@
 ﻿using LazyTransportProtocol.Core.Application.Infrastructure;
+using LazyTransportProtocol.Core.Application.Protocol;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
@@ -17,7 +18,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace LazyTransportProtocol.Core.Application.Protocol
+namespace LazyTransportProtocol.Server
 {
 	public delegate TResponse RequestCallback<TResponse>(IProtocolRequest<TResponse> request)
 		where TResponse : class, IProtocolResponse, new();
@@ -123,7 +124,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			// Default headers for handshake
 			AgreedHeadersDictionary handshakeHeaders = new AgreedHeadersDictionary(";", 1024, handshakeProtocol);
 			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
-			MediumDeserializedObject requestObject = ProtocolDeserializer.Deserialize(requestString, handshakeHeaders, handshakeProtocol);
+			MediumDeserializedObject requestObject = null;
+			try
+			{
+				requestObject = ProtocolDeserializer.Deserialize(requestString, handshakeHeaders, handshakeProtocol);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+
+				return String.Empty;
+			}
 
 			HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
 			var response = executor.Execute(request);
@@ -151,8 +162,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		private static string HandleRequest(string requestString, ProtocolState connectionState)
 		{
 			ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
+			MediumDeserializedObject requestObject = null;
+			try
+			{
+				requestObject = ProtocolDeserializer.Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
 
-			MediumDeserializedObject requestObject = ProtocolDeserializer.Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
+				return String.Empty;
+			}
 
 			IProtocolResponse protocolResponse = null;
 			IProtocolRequest<IProtocolResponse> request = null;
@@ -208,6 +228,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					case UploadFileRequest.Identifier:
 						Deserialize<UploadFileRequest>();
 						break;
+
 					default:
 						protocolResponse = new ErrorResponse
 						{
