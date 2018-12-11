@@ -7,6 +7,6 @@ namespace LazyTransportProtocol.Core.Application.Transport.Responses
 	{
 		public byte[] ResponseData { get; set; }
 
-		public IConnection ConnectionContext { get; set; }
+		public IServerConnection ConnectionContext { get; set; }
 	}
 }

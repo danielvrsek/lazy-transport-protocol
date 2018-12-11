@@ -9,7 +9,6 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 	/// <summary>
 	/// Default implemntation of the <see cref="IPipelineBuilder{T}"/>
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
 	public class BasicPipelineQueue<T> : IPipelineQueue<T>
 	{
 		private readonly object _lock = new object();
@@ -17,6 +16,7 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 		private List<Func<T, T>> _pipelineFuncs = new List<Func<T, T>>();
 
 		private Action<PipelineExceptionContext<T>> _onExceptionAction = null;
+		private bool _onExceptionRethrow;
 
 		public void AddToQueue(Func<T, T> pipelineFunc)
 		{
@@ -44,13 +44,20 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 					Exception = e,
 					Request = request
 				});
+
+				if (!_onExceptionRethrow)
+				{
+					return request;
+				}
+
 				throw;
 			}
 		}
 
-		public void OnError(Action<PipelineExceptionContext<T>> action)
+		public void OnError(Action<PipelineExceptionContext<T>> action, bool rethrow = true)
 		{
 			_onExceptionAction = action;
+			_onExceptionRethrow = rethrow;
 		}
 	}
 }

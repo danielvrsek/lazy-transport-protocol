@@ -2,13 +2,14 @@
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Requests
 {
 	public class ConnectToServerRequest : ITransportRequest<ConnectToServerResponse>
 	{
-		public string IpAdress { get; set; }
+		public IPAddress IPAdress { get; set; }
 
 		public int Port { get; set; }
 	}

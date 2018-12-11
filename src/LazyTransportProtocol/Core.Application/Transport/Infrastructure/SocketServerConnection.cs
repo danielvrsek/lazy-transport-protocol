@@ -5,13 +5,16 @@ using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 {
-	public class SocketConnection : IConnection
+	public class SocketServerConnection : IServerConnection
 	{
 		private TransportRequestExecutor _transportExecutor = new TransportRequestExecutor();
 
-		public Socket Sender { get; set; }
+		public SocketServerConnection(Socket sender)
+		{
+			Sender = sender;
+		}
 
-		public IConnectionState State { get; set; }
+		public Socket Sender { get; }
 
 		public byte[] Send(byte[] data)
 		{

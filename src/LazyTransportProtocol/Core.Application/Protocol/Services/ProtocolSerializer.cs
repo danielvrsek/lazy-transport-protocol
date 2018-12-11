@@ -8,14 +8,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolSerializer
 	{
-		public static string Serialize(string identifier, string headers, string body, AgreedHeadersDictionary agreedHeaders)
-		{
-			return Serialize(identifier, headers, body, agreedHeaders, agreedHeaders.ProtocolVersion);
-		}
+		private const string separator = ";";
 
-		public static string Serialize(string identifier, string headers, string body, AgreedHeadersDictionary agreedHeaders, ProtocolVersion protocolVersion)
+		public static string Serialize(string identifier, string headers, string body)
 		{
-			return identifier + agreedHeaders.Separator + headers + agreedHeaders.Separator + body;
+			return identifier + separator + headers + separator + body;
 		}
 	}
 }

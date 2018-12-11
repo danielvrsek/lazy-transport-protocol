@@ -23,7 +23,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 {
 	public class SocketProtocolRequestExecutor : IRemoteRequestExecutor
 	{
-		private IConnection _connection;
+		private IServerConnection _connection;
 
 		private readonly IEncoder _encoder = new ProtocolEncoder();
 		private readonly IDecoder _decoder = new ProtocolDecoder();
@@ -46,22 +46,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			}
 
 			_connection = _transport.Connect(parameters.IPAddress, parameters.Port);
-			_connection.State = new ProtocolState
-			{
-				// handshake
-				AgreedHeaders = new AgreedHeadersDictionary(";", 1024, ProtocolVersion.Handshake)
-			};
-
-			AcknowledgementResponse response = Execute(new HandshakeRequest
-			{
-				ProtocolVersion = _protocolVersion.ToString(),
-				BufferSize = _maxRequestLength,
-				Separator = _separator
-			});
-
-			ProtocolState state = (ProtocolState)_connection.State;
-
-			state.AgreedHeaders = new AgreedHeadersDictionary(_separator, _maxRequestLength, _protocolVersion);
 		}
 
 		public TResponse Execute<TResponse>(IProtocolRequest<TResponse> request)
@@ -72,34 +56,32 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 				throw new ConnectionRequiredException();
 			}
 
-			ProtocolState state = (ProtocolState)_connection.State;
-
 			MessageHeadersDictionary headers = new MessageHeadersDictionary();
 
-			string requestHeaders = ProtocolMessageHeaderSerializer.Serialize(headers, state.AgreedHeaders.ProtocolVersion);
-			string requestBody = ProtocolBodySerializer.Serialize(request, state.AgreedHeaders.ProtocolVersion);
-			string requestIdentifier = request.GetIdentifier(state.AgreedHeaders.ProtocolVersion);
-			string requestString = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody, state.AgreedHeaders);
-			byte[] requestEncoded = _encoder.Encode(requestString + "<EOF>");
+			string requestHeaders = ProtocolMessageHeaderSerializer.Serialize(headers);
+			string requestBody = ProtocolBodySerializer.Serialize(request);
+			string requestIdentifier = request.GetIdentifier();
+			string requestString = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody);
+			byte[] requestEncoded = _encoder.Encode(requestString);
 
 			byte[] responseEncoded = _connection.Send(requestEncoded);
 			string responseDecoded = _decoder.Decode(responseEncoded);
 
-			var requestObject = ProtocolDeserializer.Deserialize(responseDecoded, state.AgreedHeaders, state.AgreedHeaders.ProtocolVersion);
-			string identifier = new TResponse().GetIdentifier(state.AgreedHeaders.ProtocolVersion);
-			
+			var requestObject = ProtocolDeserializer.Deserialize(responseDecoded);
+			string identifier = new TResponse().GetIdentifier();
+
 			if (requestObject.ControlCommand != identifier)
 			{
 				if (requestObject.ControlCommand == ErrorResponse.Identifier)
 				{
-					ErrorResponse errorResponse = ProtocolBodyDeserializer.Deserialize<ErrorResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
+					ErrorResponse errorResponse = ProtocolBodyDeserializer.Deserialize<ErrorResponse>(requestObject.Body);
 					throw new CustomException(errorResponse.Message);
 				}
 
 				throw new InvalidResponseException();
 			}
 
-			TResponse response = ProtocolBodyDeserializer.Deserialize<TResponse>(requestObject.Body, state.AgreedHeaders.ProtocolVersion);
+			TResponse response = ProtocolBodyDeserializer.Deserialize<TResponse>(requestObject.Body);
 
 			return response;
 		}

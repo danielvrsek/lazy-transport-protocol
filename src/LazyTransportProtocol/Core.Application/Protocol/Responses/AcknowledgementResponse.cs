@@ -21,7 +21,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 			}
 		}
 
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

@@ -8,6 +8,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
+using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using LazyTransportProtocol.Core.Domain.Exceptions;
@@ -20,189 +21,48 @@ using System.Threading;
 
 namespace LazyTransportProtocol.Server
 {
-	public delegate TResponse RequestCallback<TResponse>(IProtocolRequest<TResponse> request)
-		where TResponse : class, IProtocolResponse, new();
-
 	public class ProtocolRequestListener
 	{
-		private static ManualResetEvent allDone = new ManualResetEvent(false);
-
 		private static ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
-		private const string eof = "<EOF>";
+		private static TransportLayer transportLayer = new TransportLayer();
 
 		public void Listen(IPAddress ipAddress, int port)
 		{
-			IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
-
-			Socket listener = new Socket(ipAddress.AddressFamily,
-				SocketType.Stream, ProtocolType.Tcp);
-
-			listener.Bind(localEndPoint);
-			listener.Listen(100);
-
-			while (true)
-			{
-				allDone.Reset();
-
-				Console.WriteLine("Waiting for a connection...");
-				listener.BeginAccept(OnClientConnected, listener);
-
-				allDone.WaitOne();
-			}
+			Console.WriteLine("Waiting for connection..");
+			transportLayer.Listen(ipAddress, port, OnClientConnected, OnDataReceived, OnErrorOccured);
 		}
 
-		public static void OnClientConnected(IAsyncResult ar)
+		public static void OnClientConnected(IClientConnection connection)
 		{
-			allDone.Set();
-
-			Socket listener = (Socket)ar.AsyncState;
-			Socket handler = listener.EndAccept(ar);
-
-			// Create the state object.
-			StateObject state = new StateObject
-			{
-				WorkSocket = handler
-			};
-
-			handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
+			// NOOP
 		}
 
-		public static void OnDataReceived(IAsyncResult ar)
+		public static void OnDataReceived(IClientConnection connection, byte[] data)
 		{
 			try
 			{
 				IDecoder decoder = new ProtocolDecoder();
+				IEncoder encoder = new ProtocolEncoder();
 
-				StateObject state = (StateObject)ar.AsyncState;
-				Socket handler = state.WorkSocket;
+				string requestString = decoder.Decode(data);
 
-				int bytesRead = handler.EndReceive(ar);
-
-				if (bytesRead == 0)
+				MediumDeserializedObject requestObject = null;
+				try
 				{
-					return;
+					requestObject = ProtocolDeserializer.Deserialize(requestString);
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine(e.Message);
 				}
 
-				string decoded = decoder.Decode(state.Buffer, 0, bytesRead);
-				state.StringBuilder.Append(decoded);
+				IProtocolResponse protocolResponse = null;
+				IProtocolRequest<IProtocolResponse> request = null;
 
-				if (decoded.EndsWith(eof))
-				{
-					state.StringBuilder.Remove(state.StringBuilder.Length - eof.Length, eof.Length);
-					string requestString = state.StringBuilder.ToString();
-
-					string serializedResponse;
-
-					if (state.ProtocolState == null)
-					{
-						// First client's request. Hanshake expected
-						serializedResponse = BeginHandshake(requestString, state);
-					}
-					else
-					{
-						serializedResponse = HandleRequest(requestString, (ProtocolState)state.ProtocolState);
-					}
-
-					Send(state, serializedResponse + eof);
-				}
-				else
-				{
-					// Not all data received. Get more.
-					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
-				}
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(e.Message);
-			}
-		}
-
-		private static string BeginHandshake(string requestString, StateObject state)
-		{
-			ProtocolVersion handshakeProtocol = ProtocolVersion.Handshake;
-
-			// Default headers for handshake
-			AgreedHeadersDictionary handshakeHeaders = new AgreedHeadersDictionary(";", 1024, handshakeProtocol);
-			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
-			MediumDeserializedObject requestObject = null;
-			try
-			{
-				requestObject = ProtocolDeserializer.Deserialize(requestString, handshakeHeaders, handshakeProtocol);
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(e.Message);
-
-				return String.Empty;
-			}
-
-			HandshakeRequest request = ProtocolBodyDeserializer.Deserialize<HandshakeRequest>(requestObject.Body, ProtocolVersion.Handshake);
-			var response = executor.Execute(request);
-
-			if (response.IsSuccessful)
-			{
-				ProtocolVersion protocolVersion = new ProtocolVersion(request.ProtocolVersion);
-
-				state.ProtocolState = new ProtocolState
-				{
-					AgreedHeaders = new AgreedHeadersDictionary(request.Separator, request.BufferSize, protocolVersion)
-				};
-
-				state.Buffer = new byte[request.BufferSize];
-			}
-
-			string identifier = response.GetIdentifier(handshakeProtocol);
-			string headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders, handshakeProtocol);
-			string responseBody = ProtocolBodySerializer.Serialize(response, handshakeProtocol);
-			string serializedResponse = ProtocolSerializer.Serialize(identifier, headers, responseBody, handshakeHeaders);
-
-			return serializedResponse;
-		}
-
-		private static string HandleRequest(string requestString, ProtocolState connectionState)
-		{
-			ProtocolVersion protocolVersion = connectionState.AgreedHeaders.ProtocolVersion;
-			MediumDeserializedObject requestObject = null;
-			try
-			{
-				requestObject = ProtocolDeserializer.Deserialize(requestString, connectionState.AgreedHeaders, protocolVersion);
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(e.Message);
-
-				return String.Empty;
-			}
-
-			IProtocolResponse protocolResponse = null;
-			IProtocolRequest<IProtocolResponse> request = null;
-
-			if (connectionState.AuthenticationContext == null)
-			{
-				if (requestObject.ControlCommand != AuthenticationRequest.Identifier)
-				{
-					protocolResponse = new ErrorResponse
-					{
-						Code = 403,
-						Message = "Unauthorized."
-					};
-				}
-				else
-				{
-					Deserialize<AuthenticationRequest>();
-
-					if (request.AuthenticationContext != null)
-					{
-						connectionState.AuthenticationContext = request.AuthenticationContext;
-					}
-				}
-			}
-			else
-			{
 				switch (requestObject.ControlCommand)
 				{
 					case CreateUserRequest.Identifier:
-						Deserialize<CreateUserRequest>();
+
 						break;
 
 					case DeleteUserRequest.Identifier:
@@ -237,98 +97,61 @@ namespace LazyTransportProtocol.Server
 						};
 						break;
 				}
-			}
 
-			void Deserialize<TRequest>()
-				where TRequest : IProtocolRequest<IProtocolResponse>
-			{
-				try
+				void Deserialize<TRequest>()
+					where TRequest : IProtocolRequest<IProtocolResponse>
 				{
-					request = ProtocolBodyDeserializer.Deserialize<TRequest>(requestObject.Body, protocolVersion);
-					request.AuthenticationContext = connectionState.AuthenticationContext;
-					protocolResponse = executor.Execute(request);
-				}
-				catch (AuthorizationException)
-				{
-					protocolResponse = new ErrorResponse
+					try
 					{
-						Code = 403,
-						Message = "Unauthorized."
-					};
-				}
-				catch (CustomException e)
-				{
-					protocolResponse = new ErrorResponse
+						request = ProtocolBodyDeserializer.Deserialize<CreateUserRequest>(requestObject.Body);
+						protocolResponse = executor.Execute(request);
+					}
+					catch (AuthorizationException)
 					{
-						Code = 400,
-						Message = e.Message
-					};
-				}
-				catch (Exception)
-				{
-					protocolResponse = new ErrorResponse
+						protocolResponse = new ErrorResponse
+						{
+							Code = 403,
+							Message = "Unauthorized."
+						};
+					}
+					catch (CustomException e)
 					{
-						Code = 500,
-						Message = "Internal server error."
-					};
+						protocolResponse = new ErrorResponse
+						{
+							Code = 400,
+							Message = e.Message
+						};
+					}
+					catch (Exception)
+					{
+						protocolResponse = new ErrorResponse
+						{
+							Code = 500,
+							Message = "Internal server error."
+						};
+					}
 				}
-			}
 
-			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
+				MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
 
-			string identifier = protocolResponse.GetIdentifier(protocolVersion);
-			string headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders, protocolVersion);
-			string serializedBody = ProtocolBodySerializer.Serialize(protocolResponse, protocolVersion);
-			string serializedResponse = ProtocolSerializer.Serialize(identifier, headers, serializedBody, connectionState.AgreedHeaders);
+				string identifier = protocolResponse.GetIdentifier();
+				string headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders);
+				string serializedBody = ProtocolBodySerializer.Serialize(protocolResponse);
+				string serializedResponse = ProtocolSerializer.Serialize(identifier, headers, serializedBody);
 
-			return serializedResponse;
-		}
+				byte[] bytes = encoder.Encode(serializedResponse);
 
-		private static void Send(StateObject state, string data)
-		{
-			IEncoder encoder = new ProtocolEncoder();
-
-			byte[] byteData = encoder.Encode(data);
-
-			state.WorkSocket.BeginSend(byteData, 0, byteData.Length, 0, OnSendCompleted, state);
-		}
-
-		private static void OnSendCompleted(IAsyncResult ar)
-		{
-			try
-			{
-				StateObject state = (StateObject)ar.AsyncState;
-				Socket handler = state.WorkSocket;
-
-				int bytesSent = handler.EndSend(ar);
-
-				if (state.ProtocolState != null)
-				{
-					state.StringBuilder.Clear();
-					handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceived, state);
-				}
-				else
-				{
-					// Unsuccessful handshake
-					handler.Shutdown(SocketShutdown.Both);
-					handler.Close();
-				}
+				connection.Send(bytes);
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine(e.ToString());
+				Console.WriteLine(e.Message);
 			}
 		}
 
-		public class StateObject
+		private static void OnErrorOccured(IClientConnection connection, Exception e)
 		{
-			public Socket WorkSocket { get; set; }
-
-			public byte[] Buffer { get; set; } = new byte[1024];
-
-			public StringBuilder StringBuilder { get; } = new StringBuilder();
-
-			public IConnectionState ProtocolState { get; set; }
+			Console.WriteLine(e.Message);
 		}
 	}
 }

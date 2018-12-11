@@ -18,7 +18,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public IAuthenticationContext AuthenticationContext { get; set; }
 
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

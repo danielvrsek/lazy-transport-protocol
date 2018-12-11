@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
@@ -11,15 +12,29 @@ namespace LazyTransportProtocol.Core.Application.Transport
 	{
 		private TransportRequestExecutor _transportExecutor = new TransportRequestExecutor();
 
-		public IConnection Connect(string ipAdress, int port)
+		public IServerConnection Connect(IPAddress ipAdress, int port)
 		{
 			ConnectToServerResponse response = _transportExecutor.Execute(new ConnectToServerRequest
 			{
-				IpAdress = ipAdress,
+				IPAdress = ipAdress,
 				Port = port
 			});
 
 			return response.Connection;
+		}
+
+		public void Listen(IPAddress ipAddress, int port, ClientConnected clientConnected, DataReceived dataReceived, ErrorOccured errorOccured)
+		{
+			ListenToIncommingDataResponse response = _transportExecutor.Execute(new ListenToIncommingDataRequest
+			{
+				IPAddress = ipAddress,
+				Port = port,
+				BufferSize = 2048
+			});
+
+			response.ClientConnected += clientConnected;
+			response.DataReceived += dataReceived;
+			response.ErrorOccured += errorOccured;
 		}
 	}
 }

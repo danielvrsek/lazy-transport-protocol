@@ -5,6 +5,6 @@ namespace LazyTransportProtocol.Core.Application.Transport.Responses
 {
 	public class ConnectToServerResponse : ITransportResponse
 	{
-		public IConnection Connection { get; set; }
+		public IServerConnection Connection { get; set; }
 	}
 }

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,11 +25,15 @@ namespace LazyTransportProtocol.Client.Services
 
 		public string CurrentFolder { get; private set; } = "/";
 
+		private string authenticationToken = null;
+
 		public void Connect(string ipAdress, int port)
 		{
+			IPAddress ip = IPAddress.Parse(ipAdress);
+
 			remoteExecutor.Connect(new SocketConnectionParameters
 			{
-				IPAddress = ipAdress,
+				IPAddress = ip,
 				Port = port
 			});
 
@@ -58,7 +63,7 @@ namespace LazyTransportProtocol.Client.Services
 
 		public bool Authenticate(string username, string password)
 		{
-			AcknowledgementResponse response = remoteExecutor.Execute(new AuthenticationRequest
+			AuthenticationResponse response = remoteExecutor.Execute(new AuthenticationRequest
 			{
 				Username = username,
 				Password = password
@@ -67,6 +72,7 @@ namespace LazyTransportProtocol.Client.Services
 			if (response.IsSuccessful)
 			{
 				Username = username;
+				authenticationToken = response.AuthenticationToken;
 			}
 
 			return response.IsSuccessful;

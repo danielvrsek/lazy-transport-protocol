@@ -15,7 +15,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 
 		public List<RemoteDirectory> RemoteDirectories { get; set; }
 
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

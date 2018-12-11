@@ -1,6 +1,7 @@
 ﻿using LazyTransportProtocol.Core.Application.Protocol.Extensions;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
+using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
@@ -15,10 +16,14 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
 	public class SendDataRequestHandler : ITransportRequestHandler<SendDataRequest, SendDataResponse>
 	{
+		private byte[] EndOfMessage = new ProtocolEncoder().Encode("</>");
+
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
+			byte[] data = request.Data.Append(EndOfMessage);
+
 			Socket socket = request.Sender;
-			int recvd = socket.Send(request.Data);
+			int recvd = socket.Send(data);
 
 			IList<ArraySegment<byte>> bufferList = Receive(request.Sender);
 
@@ -29,14 +34,14 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 				responseSize += seg.Count;
 			}
 
-			byte[] data = new byte[responseSize];
+			byte[] responseData = new byte[responseSize];
 			int index = 0;
 
 			foreach (var seg in bufferList)
 			{
 				for (int i = 0; i < seg.Count; i++, index++)
 				{
-					data[index] = seg[i];
+					responseData[index] = seg[i];
 				}
 			}
 
@@ -54,13 +59,12 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 		public IList<ArraySegment<byte>> Receive(Socket socket)
 		{
 			IEncoder encoder = new ProtocolEncoder();
-			byte[] eof = encoder.Encode("<EOF>");
 			IList<ArraySegment<byte>> buffers = new List<ArraySegment<byte>>();
 
 			byte[] buffer = null;
 			ArraySegment<byte> segment = null;
 			int noDataReceivedCount = 0;
-			
+
 			do
 			{
 				if (buffer == null)
@@ -86,12 +90,11 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 				{
 					noDataReceivedCount++;
 				}
-
 			}
-			while (!segment.EndsWith(eof));
+			while (!segment.EndsWith(EndOfMessage));
 
 			ArraySegment<byte> lastSegment = buffers[buffers.Count - 1];
-			buffers[buffers.Count - 1] = lastSegment.Slice(0, lastSegment.Count - eof.Length);
+			buffers[buffers.Count - 1] = lastSegment.Slice(0, lastSegment.Count - EndOfMessage.Length);
 
 			return buffers;
 		}

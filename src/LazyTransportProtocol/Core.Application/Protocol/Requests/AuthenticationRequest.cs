@@ -5,7 +5,7 @@ using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class AuthenticationRequest : IProtocolRequest<AcknowledgementResponse>
+	public class AuthenticationRequest : IProtocolRequest<AuthenticationResponse>
 	{
 		public const string Identifier = "AUTHENTICATE";
 
@@ -13,9 +13,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public string Password { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

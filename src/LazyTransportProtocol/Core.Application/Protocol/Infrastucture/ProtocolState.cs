@@ -8,8 +8,6 @@ namespace LazyTransportProtocol.Core.Application.Infrastructure
 {
 	public class ProtocolState : IConnectionState
 	{
-		public AgreedHeadersDictionary AgreedHeaders { get; set; }
-
 		public IAuthenticationContext AuthenticationContext { get; set; }
 	}
 }

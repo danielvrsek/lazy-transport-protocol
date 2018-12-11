@@ -8,7 +8,7 @@ using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class CreateUserRequest : IProtocolRequest<AcknowledgementResponse>
+	public class CreateUserRequest : AuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "CREATEUSER";
 
@@ -16,9 +16,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public string Password { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public override string GetIdentifier()
 		{
 			return Identifier;
 		}

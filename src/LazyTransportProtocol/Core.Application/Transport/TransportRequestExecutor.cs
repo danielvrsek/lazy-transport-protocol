@@ -5,14 +5,14 @@ using LazyTransportProtocol.Core.Application.Validators;
 
 namespace LazyTransportProtocol.Core.Application.Transport
 {
-	public class TransportRequestExecutor : RequestExecutorBase
+	internal class TransportRequestExecutor : RequestExecutorBase
 	{
 		public override void Register()
 		{
+			Register(new ListenToIncommingDataRequestHandler());
 			Register(new ConnectToServerRequestHandler())
 				.AddValidator(
 					new BasicRequestValidatorBuilder<ConnectToServerRequest>()
-						.AddPropertyValidator((request) => request.IpAdress, new IPv4Validator())
 						.AddPropertyValidator((request) => request.Port, new PortValidator())
 						.Build())
 				.OnException((ctx) =>

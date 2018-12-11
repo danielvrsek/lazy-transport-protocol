@@ -15,7 +15,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		#region ..ctors
 
-		public UserSecretAccessor() : this(ServerConfiguration.UserSecretFilepath)
+		public UserSecretAccessor() : this(ServerConfiguration.Instance().UserSecretFilepath)
 		{
 		}
 

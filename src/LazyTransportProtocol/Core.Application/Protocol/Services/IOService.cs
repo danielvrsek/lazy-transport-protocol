@@ -13,10 +13,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		/// <summary>
 		/// Transforms path from request into system path
 		/// </summary>
-		/// <returns></returns>
 		public static string TransformPath(string path)
 		{
-			string rootFolder = ServerConfiguration.RootFolder;
+			string rootFolder = ServerConfiguration.Instance().RootFolder;
 			path = Uri.UnescapeDataString(path);
 
 			if (Path.IsPathRooted(path))

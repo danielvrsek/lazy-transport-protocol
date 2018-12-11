@@ -10,7 +10,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public static class ProtocolBodyDeserializer
 	{
-		public static T Deserialize<T>(string requestBody, ProtocolVersion protocolVersion)
+		public static T Deserialize<T>(string requestBody)
 		{
 			if (requestBody == null)
 			{

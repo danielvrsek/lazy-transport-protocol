@@ -8,15 +8,13 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class DeleteUserRequest : IProtocolRequest<AcknowledgementResponse>
+	public class DeleteUserRequest : AuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "USERDEL";
 
 		public string Username { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public override string GetIdentifier()
 		{
 			return Identifier;
 		}

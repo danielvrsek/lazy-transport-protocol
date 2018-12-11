@@ -16,13 +16,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests
 	public interface IProtocolRequest<out TResponse> : IRequest<TResponse>
 		where TResponse : IProtocolResponse
 	{
-		IAuthenticationContext AuthenticationContext { get; set; }
-
 		/// <summary>
 		/// Method to obtain identifier of the protocol request
 		/// </summary>
-		/// <param name="protocolVersion">Protocol version</param>
-		/// <returns>Identifier of the protocol request</returns>
-		string GetIdentifier(ProtocolVersion protocolVersion);
+		string GetIdentifier();
 	}
 }

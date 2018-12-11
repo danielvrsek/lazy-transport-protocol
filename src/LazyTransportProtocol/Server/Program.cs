@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -41,17 +42,14 @@ namespace LazyTransportProtocol.Server
 
 		private static void LoadConfig(string configPath)
 		{
-			var config = new
-			{
-				ServerConfiguration.RootFolder,
-				ServerConfiguration.UserSecretFilepath
-			};
+			ServerConfiguration serverConfig = ServerConfiguration.Instance();
+			serverConfig.ServerSecret = RandomString(16);
 
 			try
 			{
 				if (!File.Exists(configPath))
 				{
-					string json = JsonConvert.SerializeObject(config);
+					string json = JsonConvert.SerializeObject(serverConfig);
 
 					using (StreamWriter sw = new StreamWriter(configPath))
 					{
@@ -60,12 +58,22 @@ namespace LazyTransportProtocol.Server
 				}
 				else
 				{
+					ServerConfiguration loadedConfig;
 					using (StreamReader sr = new StreamReader(configPath))
 					{
-						var loadedConfig = JsonConvert.DeserializeAnonymousType(sr.ReadToEnd(), config);
+						loadedConfig = JsonConvert.DeserializeObject<ServerConfiguration>(sr.ReadToEnd());
 
-						ServerConfiguration.RootFolder = loadedConfig.RootFolder;
-						ServerConfiguration.UserSecretFilepath = loadedConfig.UserSecretFilepath;
+						serverConfig.RootFolder = loadedConfig.RootFolder;
+						serverConfig.UserSecretFilepath = loadedConfig.UserSecretFilepath;
+						serverConfig.ServerSecret = loadedConfig.ServerSecret;
+					}
+
+					// Update with "new" values
+					string json = JsonConvert.SerializeObject(serverConfig);
+
+					using (StreamWriter sw = new StreamWriter(configPath))
+					{
+						sw.Write(json);
 					}
 				}
 			}
@@ -73,6 +81,14 @@ namespace LazyTransportProtocol.Server
 			{
 				Console.WriteLine("Configuration could not be loaded. Using default values.");
 			}
+		}
+
+		private static string RandomString(int length)
+		{
+			Random random = new Random();
+			const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+			return new string(Enumerable.Repeat(chars, length)
+			  .Select(s => s[random.Next(s.Length)]).ToArray());
 		}
 	}
 }

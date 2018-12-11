@@ -8,15 +8,13 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class CreateDirectoryRequest : IProtocolRequest<AcknowledgementResponse>
+	public class CreateDirectoryRequest : AuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "MKDIR";
 
 		public string Path { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier(ProtocolVersion protocolVersion)
+		public override string GetIdentifier()
 		{
 			return Identifier;
 		}

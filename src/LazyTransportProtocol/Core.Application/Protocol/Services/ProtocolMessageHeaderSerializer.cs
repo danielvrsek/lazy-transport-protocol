@@ -8,7 +8,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolMessageHeaderSerializer
 	{
-		public static string Serialize(MessageHeadersDictionary requestHeaders, ProtocolVersion protocolVersion)
+		public static string Serialize(MessageHeadersDictionary requestHeaders)
 		{
 			StringBuilder sb = new StringBuilder();
 

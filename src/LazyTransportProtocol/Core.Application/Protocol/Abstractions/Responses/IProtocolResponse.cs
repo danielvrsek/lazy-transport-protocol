@@ -16,6 +16,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses
 		/// </summary>
 		/// <param name="protocolVersion">Protocol version</param>
 		/// <returns>Identifier of the protocol response</returns>
-		string GetIdentifier(ProtocolVersion protocolVersion);
+		string GetIdentifier();
 	}
 }

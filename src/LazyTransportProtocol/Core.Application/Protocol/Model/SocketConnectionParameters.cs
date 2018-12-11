@@ -8,7 +8,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Model
 {
 	public class SocketConnectionParameters : IRemoteConnectionParameters
 	{
-		public string IPAddress { get; set; }
+		public IPAddress IPAddress { get; set; }
 
 		public int Port { get; set; }
 	}

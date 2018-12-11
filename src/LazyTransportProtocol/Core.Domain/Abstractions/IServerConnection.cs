@@ -3,10 +3,8 @@ using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Domain.Abstractions
 {
-	public interface IConnection
+	public interface IServerConnection
 	{
-		IConnectionState State { get; set; }
-
 		byte[] Send(byte[] data);
 
 		void SendAsync(byte[] data, Action<byte[]> responseCallback);

@@ -1,0 +1,13 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace LazyTransportProtocol.Core.Domain.Abstractions
+{
+	public interface IClientConnection
+	{
+		void Send(byte[] data);
+
+		void Disconnect();
+	}
+}

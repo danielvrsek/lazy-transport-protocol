@@ -9,6 +9,13 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
     public class AuthorizationService
     {
+		private readonly ServerConfiguration _serverConfiguration;
+
+		public AuthorizationService()
+		{
+			_serverConfiguration = ServerConfiguration.Instance();
+		}
+
 		public bool HasAccessToDirectory(IAuthenticationContext context, string path)
 		{
 			if (!IsChildOfRootDirectory(path))
@@ -23,7 +30,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			string systemPath = IOService.TransformPath(path);
 
-			string rel = Path.GetRelativePath(ServerConfiguration.RootFolder, systemPath);
+			string rel = Path.GetRelativePath(_serverConfiguration.RootFolder, systemPath);
 
 			if (rel.StartsWith(".."))
 			{

@@ -6,8 +6,9 @@ using System;
 
 namespace LazyTransportProtocol.Core.Application.Pipeline
 {
-	public class BasicRequestPipelineBuilder<TRequest> : IPipelineBuilder<TRequest>
-		where TRequest : IRequest<IResponse>
+	public class BasicRequestPipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TRequest>
+		where TRequest : IRequest<TResponse>
+		where TResponse : IResponse
 	{
 		private BasicPipelineQueue<TRequest> basicPipelineQueue = new BasicPipelineQueue<TRequest>();
 

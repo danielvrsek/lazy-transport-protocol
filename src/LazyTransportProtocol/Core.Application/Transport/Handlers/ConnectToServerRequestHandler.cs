@@ -14,20 +14,16 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 	{
 		public ConnectToServerResponse GetResponse(ConnectToServerRequest request)
 		{
-			IPAddress ipAddress = IPAddress.Parse(request.IpAdress);
-			IPEndPoint remoteEP = new IPEndPoint(ipAddress, request.Port);
+			IPEndPoint remoteEP = new IPEndPoint(request.IPAdress, request.Port);
 
-			Socket sender = new Socket(ipAddress.AddressFamily,
+			Socket sender = new Socket(request.IPAdress.AddressFamily,
 				SocketType.Stream, ProtocolType.Tcp);
 
 			sender.Connect(remoteEP);
 
 			return new ConnectToServerResponse
 			{
-				Connection = new SocketConnection
-				{
-					Sender = sender
-				}
+				Connection = new SocketServerConnection(sender)
 			};
 		}
 

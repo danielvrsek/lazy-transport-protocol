@@ -13,11 +13,11 @@ namespace LazyTransportProtocol.Core.Application
 	{
 		protected Dictionary<Type, RequestHandlerDelegate<IRequest<IResponse>, IResponse>> _requestHandlerDictionary = new Dictionary<Type, RequestHandlerDelegate<IRequest<IResponse>, IResponse>>();
 
-		public IPipelineBuilder<TRequest> Register<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> requestHandler)
+		public virtual IPipelineBuilder<TRequest> Register<TRequest, TResponse>(IRequestHandler<TRequest, TResponse> requestHandler)
 			where TRequest : IRequest<TResponse>
 			where TResponse : class, IResponse
 		{
-			IPipelineBuilder<TRequest> requestPipelineBuilder = new BasicRequestPipelineBuilder<TRequest>();
+			BasicRequestPipelineBuilder<TRequest, TResponse> requestPipelineBuilder = new BasicRequestPipelineBuilder<TRequest, TResponse>();
 
 			// Register delegate - don't execute
 			_requestHandlerDictionary[typeof(TRequest)] = (request) =>
