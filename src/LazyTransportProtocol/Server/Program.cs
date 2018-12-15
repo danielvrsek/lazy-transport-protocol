@@ -43,7 +43,7 @@ namespace LazyTransportProtocol.Server
 		private static void LoadConfig(string configPath)
 		{
 			ServerConfiguration serverConfig = ServerConfiguration.Instance();
-			serverConfig.ServerSecret = RandomString(16);
+			serverConfig.ServerSecret = RandomString(35);
 
 			try
 			{
@@ -63,9 +63,9 @@ namespace LazyTransportProtocol.Server
 					{
 						loadedConfig = JsonConvert.DeserializeObject<ServerConfiguration>(sr.ReadToEnd());
 
-						serverConfig.RootFolder = loadedConfig.RootFolder;
-						serverConfig.UserSecretFilepath = loadedConfig.UserSecretFilepath;
-						serverConfig.ServerSecret = loadedConfig.ServerSecret;
+						serverConfig.RootFolder = loadedConfig.RootFolder ?? serverConfig.RootFolder;
+						serverConfig.UserSecretFilepath = loadedConfig.UserSecretFilepath ?? serverConfig.UserSecretFilepath;
+						serverConfig.ServerSecret = loadedConfig.ServerSecret ?? serverConfig.ServerSecret;
 					}
 
 					// Update with "new" values

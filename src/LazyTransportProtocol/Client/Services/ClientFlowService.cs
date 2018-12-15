@@ -45,7 +45,8 @@ namespace LazyTransportProtocol.Client.Services
 			AcknowledgementResponse response = remoteExecutor.Execute(new CreateUserRequest
 			{
 				Username = username,
-				Password = password
+				Password = password,
+				AuthenticationToken = authenticationToken
 			});
 
 			return response.IsSuccessful;
@@ -55,7 +56,8 @@ namespace LazyTransportProtocol.Client.Services
 		{
 			AcknowledgementResponse response = remoteExecutor.Execute(new DeleteUserRequest
 			{
-				Username = username
+				Username = username,
+				AuthenticationToken = authenticationToken
 			});
 
 			return response.IsSuccessful;
@@ -93,7 +95,8 @@ namespace LazyTransportProtocol.Client.Services
 
 			var response = remoteExecutor.Execute(new ListDirectoryClientRequest
 			{
-				Path = path
+				Path = path,
+				AuthenticationToken = authenticationToken
 			});
 
 			List<string> names = response.RemoteDirectories.Select(x => x.Name).ToList();
@@ -108,7 +111,8 @@ namespace LazyTransportProtocol.Client.Services
 
 			var response = remoteExecutor.Execute(new CreateDirectoryRequest
 			{
-				Path = path
+				Path = path,
+				AuthenticationToken = authenticationToken
 			});
 		}
 
@@ -125,7 +129,8 @@ namespace LazyTransportProtocol.Client.Services
 
 			var lsResponse = remoteExecutor.Execute(new ListDirectoryClientRequest
 			{
-				Path = remoteDirectory
+				Path = remoteDirectory,
+				AuthenticationToken = authenticationToken
 			});
 
 			RemoteFile remoteFileInfo = lsResponse.RemoteFiles.FirstOrDefault(x => x.Filename == remoteFilename);
@@ -158,7 +163,8 @@ namespace LazyTransportProtocol.Client.Services
 						{
 							Filepath = remoteFilepath,
 							Offset = offset,
-							Count = count
+							Count = count,
+							AuthenticationToken = authenticationToken
 						});
 
 						bw.Write(response.Data);

@@ -34,12 +34,12 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 
 				var json = decoder.Decode(request.AuthenticationToken, secret, true);
 
-				List<Claim> claims = JsonConvert.DeserializeObject<List<Claim>>(json);
+				JWTPayload payload = JsonConvert.DeserializeObject<JWTPayload>(json);
 
 				return new ValidateAuthenticationResponse
 				{
 					Code = 200,
-					Claims = claims
+					Claims = payload.Claims
 				};
 			}
 			catch (Exception)

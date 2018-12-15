@@ -9,15 +9,13 @@ using System.Collections.Generic;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class ListDirectoryClientRequest : IProtocolRequest<ListDirectoryResponse>
+	public class ListDirectoryClientRequest : AuthenticatedRequest<ListDirectoryResponse>
 	{
 		public const string Identifier = "HANDSHAKE";
 
 		public string Path { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier()
+		public override string GetIdentifier()
 		{
 			return Identifier;
 		}

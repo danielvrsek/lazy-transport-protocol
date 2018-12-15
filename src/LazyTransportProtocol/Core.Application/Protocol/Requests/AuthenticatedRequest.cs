@@ -8,11 +8,11 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public abstract class AuthenticatedRequest<TResponse> : IProtocolRequest<TResponse>
+	public abstract class AuthenticatedRequest<TResponse> : IAuthenticatedRequest<TResponse>
 		where TResponse : IProtocolResponse
 	{
 		[JsonIgnore]
-		public IAuthenticationContext AuthenticationContext { get; internal set; }
+		public IAuthenticationContext AuthenticationContext { get; set; }
 
 		public string AuthenticationToken { get; set; }
 

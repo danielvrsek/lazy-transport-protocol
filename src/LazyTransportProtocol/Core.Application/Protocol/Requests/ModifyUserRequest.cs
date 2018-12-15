@@ -8,7 +8,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class ModifyUserRequest : IProtocolRequest<AcknowledgementResponse>
+	public class ModifyUserRequest : AuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "USERMODIFY";
 
@@ -16,9 +16,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public string Password { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier()
+		public override string GetIdentifier()
 		{
 			return Identifier;
 		}

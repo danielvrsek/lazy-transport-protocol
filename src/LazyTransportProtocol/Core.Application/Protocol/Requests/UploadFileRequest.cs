@@ -8,7 +8,7 @@ using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class UploadFileRequest : IProtocolRequest<AcknowledgementResponse>
+	public class UploadFileRequest : AuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "UPLOADFILE";
 
@@ -18,9 +18,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public int Offset { get; set; }
 
-		public IAuthenticationContext AuthenticationContext { get; set; }
-
-		public string GetIdentifier()
+		public override string GetIdentifier()
 		{
 			return Identifier;
 		}

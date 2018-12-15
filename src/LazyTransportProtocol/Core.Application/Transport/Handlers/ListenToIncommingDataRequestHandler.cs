@@ -1,4 +1,5 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Extensions;
+﻿
+using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
@@ -15,14 +16,21 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
 	public class ListenToIncommingDataRequestHandler : IRequestHandler<ListenToIncommingDataRequest, ListenToIncommingDataResponse>
 	{
+		private ClientConnected onClientConnectedCallback;
+		private DataReceived onAllDataReceivedCallback;
+		private ErrorOccured onErrorOccuredCallback;
+
 		private static ManualResetEvent allDone = new ManualResetEvent(false);
-		private static byte[] EndOfMessage => Encoding.UTF8.GetBytes("</>");
 
 		public ListenToIncommingDataResponse GetResponse(ListenToIncommingDataRequest request)
 		{
 			var response = new ListenToIncommingDataResponse();
 
-			new Thread(() => Listen(request.IPAddress, request.Port, request.BufferSize, response.OnDataReceived, response.OnErrorOccured)).Start();
+			onClientConnectedCallback = response.OnClientConnected;
+			onAllDataReceivedCallback = response.OnDataReceived;
+			onErrorOccuredCallback = response.OnErrorOccured;
+
+			new Thread(() => Listen(request.IPAddress, request.Port)).Start();
 
 			return response;
 		}
@@ -32,7 +40,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			throw new NotImplementedException();
 		}
 
-		public static void Listen(IPAddress ipAddress, int port, int bufferSize, DataReceived onAllDataReceivedCallback, ErrorOccured onErrorOccuredCallback)
+		public void Listen(IPAddress ipAddress, int port)
 		{
 			try
 			{
@@ -44,53 +52,54 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 				listener.Bind(localEndPoint);
 				listener.Listen(100);
 
-				StateObject state = new StateObject
-				{
-					WorkSocket = listener,
-					BufferSize = bufferSize,
-					AllDataReceivedCallback = onAllDataReceivedCallback,
-					ErrorOccuredCallback = onErrorOccuredCallback
-				};
-
 				while (true)
 				{
 					allDone.Reset();
 
-					listener.BeginAccept(new AsyncCallback(OnClientConnected), state);
+					listener.BeginAccept(new AsyncCallback(OnClientConnected), listener);
 
 					allDone.WaitOne();
 				}
 			}
 			catch (Exception e)
 			{
-				onErrorOccuredCallback(null, e);
+				onErrorOccuredCallback(new ErrorContext
+				{
+					Exception = e
+				});
 			}
 		}
 
-		public static void OnClientConnected(IAsyncResult ar)
+		public void OnClientConnected(IAsyncResult ar)
 		{
-			StateObject state = (StateObject)ar.AsyncState;
 			allDone.Set();
+			Socket listener = (Socket)ar.AsyncState;
 
 			try
 			{
-				Socket listener = state.WorkSocket;
 				Socket handler = listener.EndAccept(ar);
+
+				StateObject state = new StateObject();
 				state.WorkSocket = handler;
 				state.Connection = new SocketClientConnection(
-						(d) => Send(state, d),
-						() => Disconnect(state));
+					(d) => Send(state, d),
+					() => Disconnect(handler));
 
-				byte[] buffer = state.NewBuffer;
-				handler.BeginReceive(buffer, 0, buffer.Length, 0, new AsyncCallback(OnDataReceived), state);
+				onClientConnectedCallback(state.Connection);
+
+				handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, new AsyncCallback(OnDataReceived), state);
 			}
 			catch (Exception e)
 			{
-				state.ErrorOccuredCallback(state.Connection, e);
+				onErrorOccuredCallback(new ErrorContext
+				{
+					Exception = e
+				});
 			}
 		}
 
-		public static void OnDataReceived(IAsyncResult ar)
+
+		public void OnDataReceived(IAsyncResult ar)
 		{
 			StateObject state = (StateObject)ar.AsyncState;
 
@@ -98,51 +107,68 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			{
 				Socket handler = state.WorkSocket;
 
-				int bytesRead = handler.EndReceive(ar);
-
-				ArraySegment<byte> segment = new ArraySegment<byte>(state.CurrentBuffer, 0, bytesRead);
-
-				state.AddData(segment);
-
-				if (segment.EndsWith(EndOfMessage))
+				if (handler.EndReceive(ar, out SocketError error) > 1)
 				{
-					int dataLength = state.DataLength - EndOfMessage.Length;
-					byte[] data = new byte[dataLength];
-
-					int index = 0;
-					foreach (var seg in state.Data)
+					if (error != SocketError.Success)
 					{
-						for (int i = 0; i < seg.Count && index < dataLength; i++, index++)
+						onErrorOccuredCallback(new ErrorContext
 						{
-							data[index] = seg[i];
-						}
+							SocketError = error
+						});
+
+						Disconnect(handler);
+						return;
 					}
 
-					state.AllDataReceivedCallback(state.Connection, data);
+					int dataLength = BitConverter.ToInt32(state.Buffer, 0);
+					byte[] dataBuffer = new byte[dataLength];
+					int received = 0;
 
-					state.Reset();
+					do
+					{
+						received = received + handler.Receive(dataBuffer, received, dataBuffer.Length - received, 0);
+					}
+					while (received != dataLength);
+
+					onAllDataReceivedCallback(state.Connection, dataBuffer);
 				}
 				else
 				{
-					// Not all data received. Get more.
-					byte[] buffer = state.NewBuffer;
-					handler.BeginReceive(buffer, 0, buffer.Length, 0, new AsyncCallback(OnDataReceived), state);
+					Disconnect(handler);
 				}
 			}
 			catch (Exception e)
 			{
-				state.ErrorOccuredCallback(state.Connection, e);
+				onErrorOccuredCallback(new ErrorContext
+				{
+					Exception = e
+				});
+
+				Disconnect(state.WorkSocket);
 			}
 		}
 
-		private static void Send(StateObject state, byte[] data)
+		private void Send(StateObject state, byte[] data)
 		{
-			byte[] transportData = data.Append(EndOfMessage);
+			try
+			{
+				byte[] dataLength = BitConverter.GetBytes(data.Length);
+				byte[] transportData = dataLength.Append(data);
 
-			state.WorkSocket.BeginSend(transportData, 0, transportData.Length, 0, new AsyncCallback(OnSendCompleted), state);
+				state.WorkSocket.BeginSend(transportData, 0, transportData.Length, 0, new AsyncCallback(OnSendCompleted), state);
+			}
+			catch (Exception e)
+			{
+				onErrorOccuredCallback(new ErrorContext
+				{
+					Exception = e
+				});
+
+				Disconnect(state.WorkSocket);
+			}
 		}
 
-		private static void OnSendCompleted(IAsyncResult ar)
+		private void OnSendCompleted(IAsyncResult ar)
 		{
 			StateObject state = (StateObject)ar.AsyncState;
 
@@ -151,74 +177,37 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 				Socket handler = state.WorkSocket;
 				int bytesSent = handler.EndSend(ar);
 
-				/*byte[] buffer = state.NewBuffer;
-				handler.BeginReceive(buffer, 0, buffer.Length, 0, new AsyncCallback(OnDataReceived), state);*/
+				state.Buffer = new byte[4];
+				handler.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, new AsyncCallback(OnDataReceived), state);
 			}
 			catch (Exception e)
 			{
-				state.ErrorOccuredCallback(state.Connection, e);
+				onErrorOccuredCallback(new ErrorContext
+				{
+					Exception = e
+				});
+
+				Disconnect(state.WorkSocket);
 			}
 		}
 
-		private static void Disconnect(StateObject state)
+		private void Disconnect(Socket socket)
 		{
-			state.WorkSocket.Shutdown(SocketShutdown.Both);
-			state.WorkSocket.Close();
+			try
+			{
+				socket.Shutdown(SocketShutdown.Both);
+				socket.Close();
+			}
+			catch { }
 		}
 
 		public class StateObject
 		{
-			private int currentBufferIndex = -1;
-			private List<byte[]> buffers = new List<byte[]>();
-			private List<ArraySegment<byte>> data = new List<ArraySegment<byte>>();
-
 			public SocketClientConnection Connection { get; set; }
 
-			public int BufferSize { get; set; } = 2048;
-
-			public byte[] CurrentBuffer => buffers[currentBufferIndex];
-
-			public byte[] NewBuffer => GetNewBuffer(BufferSize);
-
-			public int DataLength { get; private set; } = 0;
-
-			public IReadOnlyList<ArraySegment<byte>> Data => data;
+			public byte[] Buffer { get; set; } = new byte[4];
 
 			public Socket WorkSocket { get; set; }
-
-			public DataReceived AllDataReceivedCallback { get; set; }
-
-			public ErrorOccured ErrorOccuredCallback { get; set; }
-
-			public void AddData(ArraySegment<byte> segment)
-			{
-				data.Add(segment);
-				DataLength += segment.Count;
-			}
-
-			public void Reset()
-			{
-				currentBufferIndex = -1;
-				DataLength = 0;
-			}
-
-			private byte[] GetNewBuffer(int size)
-			{
-				byte[] buffer;
-
-				if (currentBufferIndex + 1 >= buffers.Count)
-				{
-					buffer = new byte[BufferSize];
-					buffers.Add(buffer);
-				}
-				else
-				{
-					buffer = buffers[currentBufferIndex + 1];
-				}
-
-				currentBufferIndex++;
-				return buffer;
-			}
 		}
 	}
 }

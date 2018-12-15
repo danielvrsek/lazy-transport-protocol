@@ -16,38 +16,19 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
 	public class SendDataRequestHandler : ITransportRequestHandler<SendDataRequest, SendDataResponse>
 	{
-		private byte[] EndOfMessage = new ProtocolEncoder().Encode("</>");
-
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
-			byte[] data = request.Data.Append(EndOfMessage);
+			byte[] dataLength = BitConverter.GetBytes(request.Data.Length);
+			byte[] transportData = dataLength.Append(request.Data);
 
 			Socket socket = request.Sender;
-			int recvd = socket.Send(data);
+			socket.Send(transportData);
 
-			IList<ArraySegment<byte>> bufferList = Receive(request.Sender);
-
-			int responseSize = 0;
-
-			foreach (var seg in bufferList)
-			{
-				responseSize += seg.Count;
-			}
-
-			byte[] responseData = new byte[responseSize];
-			int index = 0;
-
-			foreach (var seg in bufferList)
-			{
-				for (int i = 0; i < seg.Count; i++, index++)
-				{
-					responseData[index] = seg[i];
-				}
-			}
+			byte[] responseData = Receive(request.Sender);
 
 			return new SendDataResponse
 			{
-				ResponseData = data
+				ResponseData = responseData
 			};
 		}
 
@@ -56,47 +37,23 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			throw new NotImplementedException();
 		}
 
-		public IList<ArraySegment<byte>> Receive(Socket socket)
+		public byte[] Receive(Socket socket)
 		{
-			IEncoder encoder = new ProtocolEncoder();
-			IList<ArraySegment<byte>> buffers = new List<ArraySegment<byte>>();
+			byte[] dataLengthBytes = new byte[4];
+			socket.Receive(dataLengthBytes);
 
-			byte[] buffer = null;
-			ArraySegment<byte> segment = null;
-			int noDataReceivedCount = 0;
+			int dataLength = BitConverter.ToInt32(dataLengthBytes);
 
-			do
+			byte[] data = new byte[dataLength];
+
+			int received = socket.Receive(data);
+
+			while (received != dataLength)
 			{
-				if (buffer == null)
-				{
-					buffer = new byte[2048];
-				}
-
-				int receivedBytes = socket.Receive(buffer);
-
-				if (receivedBytes > 0)
-				{
-					segment = new ArraySegment<byte>(buffer, 0, receivedBytes);
-					buffers.Add(segment);
-					noDataReceivedCount = 0;
-
-					buffer = null;
-				}
-				else if (noDataReceivedCount > 10)
-				{
-					throw new CustomException("Server timeout.");
-				}
-				else
-				{
-					noDataReceivedCount++;
-				}
+				received = received + socket.Receive(data, received, data.Length - received, 0);
 			}
-			while (!segment.EndsWith(EndOfMessage));
 
-			ArraySegment<byte> lastSegment = buffers[buffers.Count - 1];
-			buffers[buffers.Count - 1] = lastSegment.Slice(0, lastSegment.Count - EndOfMessage.Length);
-
-			return buffers;
+			return data;
 		}
 	}
 }

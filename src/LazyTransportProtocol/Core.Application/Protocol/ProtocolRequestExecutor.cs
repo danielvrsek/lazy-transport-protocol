@@ -3,9 +3,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Handlers;
 using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Application.Validators;
-using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
@@ -20,16 +18,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 			return base.Register(requestHandler)
 				.AddPipelineAction((request) =>
 				{
-					AuthenticatedRequest<IProtocolResponse> authenticatedRequest = request as AuthenticatedRequest<IProtocolResponse>;
-
-					if (authenticatedRequest != null)
+					if (request is IAuthenticatedRequest<IProtocolResponse> authenticatedRequest)
 					{
 						ValidateAuthorization(authenticatedRequest);
 					}
 				});
 		}
 
-		private void ValidateAuthorization(AuthenticatedRequest<IProtocolResponse> request)
+		private void ValidateAuthorization(IAuthenticatedRequest<IProtocolResponse> request)
 		{
 			var response = Execute(new ValidateAuthenticationRequest
 			{
@@ -51,7 +47,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 
 		public override void Register()
 		{
-			Register(new HandshakeRequestHandler());
 			Register(new AuthenticationRequestHandler())
 				.AddValidator(
 					new BasicRequestValidatorBuilder<AuthenticationRequest>()
@@ -86,9 +81,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 					new BasicRequestValidatorBuilder<UploadFileRequest>()
 						.AddPropertyValidator(x => x.Path, new NotNullOrEmptyValidator())
 						.Build());
-
 			Register(new CreateDirectoryRequestHandler());
-
 			Register(new ValidateAuthenticationRequestHandler());
 		}
 	}

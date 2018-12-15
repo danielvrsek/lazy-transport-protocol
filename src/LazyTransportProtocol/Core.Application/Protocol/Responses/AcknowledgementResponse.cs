@@ -21,7 +21,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 			}
 		}
 
-		public string GetIdentifier()
+		public virtual string GetIdentifier()
 		{
 			return Identifier;
 		}

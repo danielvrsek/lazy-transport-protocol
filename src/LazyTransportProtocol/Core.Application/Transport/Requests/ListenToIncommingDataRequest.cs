@@ -10,12 +10,6 @@ using System.Threading;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Requests
 {
-	public delegate void ClientConnected(IClientConnection connection);
-
-	public delegate void DataReceived(IClientConnection connection, byte[] data);
-
-	public delegate void ErrorOccured(IClientConnection connection, Exception e);
-
 	public class ListenToIncommingDataRequest : IRequest<ListenToIncommingDataResponse>
 	{
 		public IPAddress IPAddress { get; set; }

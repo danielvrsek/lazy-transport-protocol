@@ -32,6 +32,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 					new Claim(ClaimTypesMetadata.Username, request.Username)
 				};
 
+				JWTPayload payload = new JWTPayload
+				{
+					Claims = claims
+				};
+
 				string secret = ServerConfiguration.Instance().ServerSecret;
 
 				IJwtAlgorithm algorithm = new HMACSHA256Algorithm();
@@ -39,7 +44,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 				IBase64UrlEncoder urlEncoder = new JwtBase64UrlEncoder();
 				IJwtEncoder encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
 
-				string token = encoder.Encode(claims, secret);
+				string token = encoder.Encode(payload, secret);
 
 				return new AuthenticationResponse
 				{

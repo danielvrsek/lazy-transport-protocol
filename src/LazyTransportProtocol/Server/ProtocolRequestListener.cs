@@ -9,6 +9,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Application.Transport;
+using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using LazyTransportProtocol.Core.Domain.Exceptions;
@@ -62,7 +63,7 @@ namespace LazyTransportProtocol.Server
 				switch (requestObject.ControlCommand)
 				{
 					case CreateUserRequest.Identifier:
-
+						Deserialize<CreateUserRequest>();
 						break;
 
 					case DeleteUserRequest.Identifier:
@@ -103,7 +104,7 @@ namespace LazyTransportProtocol.Server
 				{
 					try
 					{
-						request = ProtocolBodyDeserializer.Deserialize<CreateUserRequest>(requestObject.Body);
+						request = ProtocolBodyDeserializer.Deserialize<TRequest>(requestObject.Body);
 						protocolResponse = executor.Execute(request);
 					}
 					catch (AuthorizationException)
@@ -149,9 +150,11 @@ namespace LazyTransportProtocol.Server
 			}
 		}
 
-		private static void OnErrorOccured(IClientConnection connection, Exception e)
+		private static void OnErrorOccured(ErrorContext ctx)
 		{
-			Console.WriteLine(e.Message);
+			string message = ctx?.Exception?.Message ?? ctx.SocketError?.ToString() ?? "Unidentified error occured.";
+
+			Console.WriteLine(message);
 		}
 	}
 }
