@@ -5,6 +5,7 @@ using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Response;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -17,68 +18,8 @@ namespace LazyTransportProtocol.Client
 	{
 		private static ClientInputService clientInputService = new ClientInputService();
 
-		private static async void Test()
-		{
-			int rows = 1000;
-			int columns = 5000;
-
-			Random rnd = new Random();
-			byte[] buffer = new byte[rows * columns];
-			rnd.NextBytes(buffer);
-			string hash;
-
-			string filename = "test.txt";
-			File.Delete(filename);
-
-			using (SHA1Managed sha1 = new SHA1Managed())
-			{
-				hash = Convert.ToBase64String(sha1.ComputeHash(buffer));
-			}
-
-			using (ParallelFileWriter writer = new ParallelFileWriter(filename))
-			{
-				Dictionary<int, ArraySegment<byte>> segments = new Dictionary<int, ArraySegment<byte>>();
-
-				for (int i = 0; i < rows; i++)
-				{
-					segments.Add(i, new ArraySegment<byte>(buffer, i * columns, columns));
-					await writer.WritePartAsync(i, new ArraySegment<byte>(buffer, i * columns, columns).ToArray());
-				}
-
-				/*Parallel.ForEach(segments, (x, s) => 
-				{
-					bool res = writer.WritePartAsync(x.Key, x.Value.ToArray()).Result;
-				});*/
-			}
-
-			using (FileStream fs = File.OpenRead(filename))
-			using (BinaryReader br = new BinaryReader(fs))
-			{
-				buffer = br.ReadBytes(rows * columns);
-			}
-
-			string newHash;
-			using (SHA1Managed sha1 = new SHA1Managed())
-			{
-				newHash = Convert.ToBase64String(sha1.ComputeHash(buffer));
-			}
-
-			if (hash == newHash)
-			{
-				Console.WriteLine("Succ");
-			}
-			else
-			{
-				Console.WriteLine("Unsucc");
-			}
-		}
-
 		private static void Main(string[] args)
 		{
-			Test();
-
-			Console.ReadLine();
-
 			Console.WriteLine("LazyTransportProtocol client v0.9");
 			Console.WriteLine();
 

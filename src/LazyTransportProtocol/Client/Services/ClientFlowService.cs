@@ -1,4 +1,5 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol;
+﻿using LazyTransportProtocol.Core.Application.IO;
+using LazyTransportProtocol.Core.Application.Protocol;
 using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
@@ -17,7 +18,9 @@ namespace LazyTransportProtocol.Client.Services
 {
 	public class ClientFlowService
 	{
+		private SocketConnectionParameters connectionParameters;
 		private readonly IRemoteRequestExecutor remoteExecutor = new SocketProtocolRequestExecutor();
+		private readonly List<IRemoteRequestExecutor> helperExecutors = new List<IRemoteRequestExecutor>();
 
 		public string Host { get; private set; }
 
@@ -31,11 +34,13 @@ namespace LazyTransportProtocol.Client.Services
 		{
 			IPAddress ip = IPAddress.Parse(ipAdress);
 
-			remoteExecutor.Connect(new SocketConnectionParameters
+			connectionParameters = new SocketConnectionParameters
 			{
 				IPAddress = ip,
 				Port = port
-			});
+			};
+
+			remoteExecutor.Connect(connectionParameters);
 
 			Host = ipAdress;
 		}
@@ -116,13 +121,27 @@ namespace LazyTransportProtocol.Client.Services
 			});
 		}
 
-		public void DownloadFile(string remoteFilepath, string localFilepath)
+		private IRemoteRequestExecutor[] GetHelperRequestExecutors(int count)
+		{
+			if (helperExecutors.Count < count)
+			{
+				for (int i = 0; i < count - helperExecutors.Count; i++)
+				{
+					IRemoteRequestExecutor executor = new SocketProtocolRequestExecutor();
+					executor.Connect(connectionParameters);
+					helperExecutors.Add(executor);
+				}
+			}
+
+			return helperExecutors.Take(count).ToArray();
+		}
+
+		public void DownloadFileSingleConnection(string remoteFilepath, string localFilepath)
 		{
 			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
 
-			long elapsed = 0;
 			int offset = 0;
-			int count = 1024 * 1024;
+			int count = 512 * 1024;
 
 			string remoteDirectory = Path.GetDirectoryName(remoteFilepath);
 			string remoteFilename = Path.GetFileName(remoteFilepath);
@@ -140,19 +159,16 @@ namespace LazyTransportProtocol.Client.Services
 				throw new CustomException("File does not exist on the remote machine.");
 			}
 
-			Console.CursorVisible = false;
-
-			WriteStatus("Downloading...", offset, remoteFileInfo.Size);
-
-			DownloadFileResponse response;
-
 			var sw = Stopwatch.StartNew();
-			try
+
+			using (ConsoleStatusWriter statusWriter = new ConsoleStatusWriter("Downloading...", remoteFileInfo.Size))
 			{
 				if (File.Exists(localFilepath))
 				{
 					File.Delete(localFilepath);
 				}
+
+				DownloadFileResponse response;
 
 				using (FileStream fs = File.OpenWrite(localFilepath))
 				using (BinaryWriter bw = new BinaryWriter(fs))
@@ -171,38 +187,68 @@ namespace LazyTransportProtocol.Client.Services
 
 						offset += response.Data.Length;
 
-						if (sw.ElapsedMilliseconds - elapsed > 70 || !response.HasNext)
-						{
-							WriteStatus("Downloading...", offset, remoteFileInfo.Size);
-							elapsed = sw.ElapsedMilliseconds;
-						}
+						statusWriter.Update(response.Data.Length);
 					}
 					while (response.HasNext);
 				}
 			}
-			catch (IOException e)
-			{
-				throw new CustomException(e.Message);
-			}
-			finally
-			{
-				Console.CursorVisible = true;
-				Console.WriteLine();
-				//Console.WriteLine(sw.ElapsedMilliseconds);
-			}
+
+			Console.WriteLine("Completed in: " + sw.ElapsedMilliseconds / (double)1000 + "s");
 		}
 
-		public void WriteStatus(string label, long downloaded, long totalSize)
+		public void DownloadFile(string remoteFilepath, string localFilepath)
 		{
-			int statusLength = 50;
-			double percentage = (double)downloaded / totalSize;
-			int completed = (int)(percentage * statusLength);
+			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
 
-			label = $"{label} {percentage.ToString("P").PadLeft(8)}";
-			string status = "[" + "".PadLeft(completed, '%').PadRight(statusLength, ' ') + "]";
+			string remoteDirectory = Path.GetDirectoryName(remoteFilepath);
+			string remoteFilename = Path.GetFileName(remoteFilepath);
 
-			Console.SetCursorPosition(0, Console.CursorTop);
-			Console.Write(label + "  " + status);
+			var lsResponse = remoteExecutor.Execute(new ListDirectoryClientRequest
+			{
+				Path = remoteDirectory,
+				AuthenticationToken = authenticationToken
+			});
+
+			RemoteFile remoteFileInfo = lsResponse.RemoteFiles.FirstOrDefault(x => x.Filename == remoteFilename);
+
+			if (remoteFileInfo == null)
+			{
+				throw new CustomException("File does not exist on the remote machine.");
+			}
+
+			int partLength = 512 * 1024;
+			ParallelFileDownloader parallelFileDownloader = new ParallelFileDownloader(remoteFileInfo.Size, partLength);
+
+			Stopwatch sw = Stopwatch.StartNew();
+
+			using (ParallelFileWriter parallelFileWriter = new ParallelFileWriter(localFilepath))
+			using (ConsoleStatusWriter statusWriter = new ConsoleStatusWriter("Downloading...", remoteFileInfo.Size))
+			{
+				parallelFileDownloader.FilePartDownloadedEvent += (partNumber, data) => ParallelFileDownloader_FilePartDownloadedEvent(parallelFileWriter, statusWriter, partNumber, data);
+
+				IRemoteRequestExecutor[] executors = GetHelperRequestExecutors(4);
+
+				foreach (var helperExecutor in executors)
+				{
+					parallelFileDownloader.StartNew((offset, count) => helperExecutor.Execute(new DownloadFileRequest
+					{
+						AuthenticationToken = authenticationToken,
+						Filepath = remoteFilepath,
+						Offset = offset,
+						Count = count
+					}).Data);
+				}
+
+				parallelFileDownloader.Wait();
+			}
+
+			Console.WriteLine("Completed in: " + sw.ElapsedMilliseconds / (double)1000 + "s");
+		}
+
+		private void ParallelFileDownloader_FilePartDownloadedEvent(ParallelFileWriter writer, ConsoleStatusWriter statusWriter, int partNumber, byte[] data)
+		{
+			writer.WritePart(partNumber, data);
+			statusWriter.Update(data.Length);
 		}
 
 		public void UploadFile(string localFilepath, string remoteFilepath)
@@ -216,12 +262,10 @@ namespace LazyTransportProtocol.Client.Services
 			FileInfo localFileInfo = new FileInfo(localFilepath);
 			long localFileSize = localFileInfo.Length;
 
-			Console.CursorVisible = false;
-			WriteStatus("Uploading...", 0, localFileSize);
+			ConsoleStatusWriter statusWriter = new ConsoleStatusWriter("Uploading...", localFileSize);
 
 			AcknowledgementResponse response;
 			byte[] buffer;
-			object obj = new object();
 
 			try
 			{
@@ -244,11 +288,6 @@ namespace LazyTransportProtocol.Client.Services
 						if (!response.IsSuccessful)
 						{
 							throw new CustomException("Error while uploading.");
-						}
-
-						if (index % 10 == 0 || buffer.Length != count)
-						{
-							WriteStatus("Uploading...", offset, localFileSize);
 						}
 					}
 					while (buffer.Length == count);

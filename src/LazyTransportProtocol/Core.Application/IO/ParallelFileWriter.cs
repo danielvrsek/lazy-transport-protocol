@@ -10,16 +10,15 @@ namespace LazyTransportProtocol.Core.Application.IO
 {
 	public class ParallelFileWriter : IDisposable
 	{
-		private readonly Dictionary<int, byte[]> _partDataDictionary = new Dictionary<int, byte[]>();
-		private readonly Dictionary<int, Action<bool>> _callbackDictionary = new Dictionary<int, Action<bool>>();
-		private readonly object _partDataLock = new object();
-		private readonly object _callbackLock = new object();
-
 		private readonly ReaderWriterLock _rwl = new ReaderWriterLock();
 		private readonly Thread _workerThread;
-		private volatile int _queueLength = 0;
+		private readonly ThreadWorker _threadWorker;
 		private CancellationTokenSource _cancellationTokenSource;
+		private ManualResetEventSlim _startEvent;
+		private ManualResetEventSlim _cancellationEvent;
 
+		private readonly string _filePath;
+		private readonly string _tempFilePath;
 		private readonly FileStream _fileStream;
 		private readonly BinaryWriter _binaryWriter;
 
@@ -27,132 +26,54 @@ namespace LazyTransportProtocol.Core.Application.IO
 
 		public ParallelFileWriter(string filePath, int timeout = 10000)
 		{
+			_tempFilePath = Path.GetTempFileName();
+			_filePath = filePath;
 			_timeout = timeout;
 
-			_fileStream = File.OpenWrite(filePath);
+			_fileStream = File.OpenWrite(_tempFilePath);
 			_binaryWriter = new BinaryWriter(_fileStream);
-
 			_cancellationTokenSource = new CancellationTokenSource();
+			_startEvent = new ManualResetEventSlim(false);
+			_cancellationEvent = new ManualResetEventSlim(false);
 
-			_workerThread = new Thread((obj) => BeginWrite(obj));
-			_workerThread.Start(_cancellationTokenSource.Token);
+			_threadWorker = new ThreadWorker(_binaryWriter, _cancellationEvent, _cancellationTokenSource.Token, timeout);
+
+			_workerThread = new Thread((object obj) =>
+			{
+				_startEvent.Set();
+				ThreadWorker threadWorker = (ThreadWorker)obj;
+				threadWorker.BeginWrite();
+			});
+
+			if (File.Exists(filePath))
+			{
+				File.Delete(filePath);
+			}
+
+			_workerThread.Start(_threadWorker);
 		}
 
-		public Task<bool> WritePartAsync(int partNumber, byte[] data)
+		public void WritePart(int partNumber, byte[] data)
 		{
-			TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
-			CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(_timeout);
-
-			cancellationTokenSource.Token.Register(() => taskCompletionSource.TrySetResult(false));
-
-			AddCallback(partNumber, (success) => taskCompletionSource.TrySetResult(success));
-			AddPartData(partNumber, data);
-
-			return taskCompletionSource.Task;
-		}
-
-		private void AddCallback(int partNumber, Action<bool> action)
-		{
-			lock (_callbackLock)
-			{
-				_callbackDictionary.Add(partNumber, action);
-			}
-		}
-
-		private void AddPartData(int partNumber, byte[] data)
-		{
-			lock (_partDataLock)
-			{
-				_queueLength += data.Length;
-				_partDataDictionary.Add(partNumber, data);
-			}
-		}
-
-		private void RemovePartData(int partNumber)
-		{
-			lock (_partDataLock)
-			{
-				int length = _partDataDictionary[partNumber].Length;
-				_queueLength -= length;
-				_partDataDictionary[partNumber] = null;
-			}
-		}
-
-		private void BeginWrite(object obj)
-		{
-			CancellationToken token = (CancellationToken)obj;
-			int currentPartNumber = -1;
-
-			while (!token.IsCancellationRequested)
-			{
-				_rwl.AcquireWriterLock(_timeout);
-				byte[] data = GetNextDataToWrite(ref currentPartNumber);
-
-				while (data != null)
-				{
-					bool success = WriteFilePart(data);
-
-					if (success)
-					{
-						RemovePartData(currentPartNumber);
-					}
-
-					Action<bool> callback = _callbackDictionary[currentPartNumber];
-					// Spustit jako task, jelikoz se jedna o synchronni operaci
-					Task.Run(() => callback(success));
-
-					data = GetNextDataToWrite(ref currentPartNumber);
-				}
-
-				_binaryWriter.Flush();
-
-				_rwl.ReleaseWriterLock();
-				Thread.Sleep(1);
-			}
-		}
-
-		private byte[] GetNextDataToWrite(ref int partNumber)
-		{
-			Dictionary<int, byte[]> dictionarySnapshot;
-
-			lock (_partDataLock)
-			{
-				dictionarySnapshot = _partDataDictionary.ToDictionary(x => x.Key, x => x.Value);
-			}
-
-			if (!dictionarySnapshot.TryGetValue(partNumber + 1, out byte[] data))
-			{
-				return null;
-			}
-
-			partNumber += 1;
-			return data;
-		}
-
-		private bool WriteFilePart(byte[] data)
-		{
-			try
-			{
-				_binaryWriter.Write(data);
-			}
-			catch
-			{
-				return false;
-			}
-
-			return true;
+			_startEvent.Wait();
+			_threadWorker.AddPartData(partNumber, data);
 		}
 
 		public void Dispose()
 		{
 			_cancellationTokenSource.Cancel();
 
-			_rwl.AcquireWriterLock(_timeout);
-			_workerThread.Join();
+			// Wait for ThreadWorker to finish the loop
+			_cancellationEvent.Wait();
+			if (!_threadWorker.EndedSuccessfully)
+			{
+				throw new ApplicationException("Data have not been written.");
+			}
 
 			_binaryWriter.Dispose();
 			_fileStream.Dispose();
-			_rwl.ReleaseWriterLock();
+
+			File.Move(_tempFilePath, _filePath);
 		}
 	}
 }
