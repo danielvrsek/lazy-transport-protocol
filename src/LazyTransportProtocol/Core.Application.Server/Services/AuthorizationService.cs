@@ -1,6 +1,5 @@
 using LazyTransportProtocol.Core.Application.Server.Configuration;
-using LazyTransportProtocol.Core.Application.Server.Protocol.Model.Abstraction.LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
-using LazyTransportProtocol.Core.Application.Services;
+using LazyTransportProtocol.Core.Application.Server.Protocol.Security.Authentication.Abstraction;
 
 namespace LazyTransportProtocol.Core.Application.Server.Services
 {
@@ -25,16 +24,10 @@ namespace LazyTransportProtocol.Core.Application.Server.Services
 
 		private bool IsChildOfRootDirectory(string path)
 		{
-			string systemPath = IOService.TransformPath(path);
+			string rootPath = IOService.GetAbsoluteRootFolder();
+			path = IOService.TransformPath(path);
 
-			string rel = PathExt.GetRelativePath(_serverConfiguration.RootFolder, systemPath);
-
-			if (rel.StartsWith(".."))
-			{
-				return false;
-			}
-
-			return true;
+			return path.StartsWith(rootPath);
 		}
 	}
 }

@@ -4,7 +4,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Responses.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
-using LazyTransportProtocol.Core.Application.Server;
+using LazyTransportProtocol.Core.Application.Server.Protocol;
 using LazyTransportProtocol.Core.Application.Transport;
 using LazyTransportProtocol.Core.Application.Transport.Model;
 using LazyTransportProtocol.Core.Domain.Abstractions;

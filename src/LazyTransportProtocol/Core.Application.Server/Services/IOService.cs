@@ -1,5 +1,4 @@
 using LazyTransportProtocol.Core.Application.Server.Configuration;
-using LazyTransportProtocol.Core.Application.Services;
 using System;
 using System.IO;
 using System.Linq;
@@ -8,12 +7,15 @@ namespace LazyTransportProtocol.Core.Application.Server.Services
 {
 	internal class IOService
 	{
+		private static readonly string _currentDirectory = Directory.GetCurrentDirectory();
+
 		/// <summary>
-		/// Transforms path from request into system path
+		/// Transforms path from request into absolute system path
 		/// </summary>
 		public static string TransformPath(string path)
 		{
-			string rootFolder = ServerConfiguration.Instance().RootFolder;
+			string rootFolder = GetAbsoluteRootFolder();
+
 			path = Uri.UnescapeDataString(path);
 
 			if (Path.IsPathRooted(path))
@@ -25,6 +27,18 @@ namespace LazyTransportProtocol.Core.Application.Server.Services
 			string combined = Path.Combine(rootFolder, path);
 
 			return combined;
+		}
+
+		public static string GetAbsoluteRootFolder()
+		{
+			string rootFolder = ServerConfiguration.Instance().RootFolder;
+
+			if (!Path.IsPathRooted(rootFolder))
+			{
+				rootFolder = Path.Combine(_currentDirectory, rootFolder);
+			}
+
+			return rootFolder;
 		}
 
 		public static string CreateDirectory(string path)
@@ -124,14 +138,14 @@ namespace LazyTransportProtocol.Core.Application.Server.Services
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateDirectories(systemPath).Select(x => PathExt.GetRelativePath(systemPath, x)).ToArray();
+			return Directory.EnumerateDirectories(systemPath).Select(x => Path.GetFileName(x)).ToArray();
 		}
 
 		public static string[] GetFiles(string path)
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateFiles(systemPath).Select(x => PathExt.GetRelativePath(systemPath, x)).ToArray();
+			return Directory.EnumerateFiles(systemPath).Select(x => Path.GetFileName(x)).ToArray();
 		}
 
 		public static FileInfo GetFileInfo(string filePath)

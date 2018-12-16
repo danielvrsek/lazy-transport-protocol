@@ -3,12 +3,13 @@ using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Responses.Abstractions;
 using LazyTransportProtocol.Core.Application.Server.Protocol.Handlers;
 using LazyTransportProtocol.Core.Application.Server.Protocol.Requests;
+using LazyTransportProtocol.Core.Application.Server.Protocol.Security.Authentication;
 using LazyTransportProtocol.Core.Application.Validators;
 using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System.Security.Authentication;
 
-namespace LazyTransportProtocol.Core.Application.Server
+namespace LazyTransportProtocol.Core.Application.Server.Protocol
 {
 	public class ProtocolRequestExecutor : RequestExecutorBase
 	{
@@ -38,6 +39,12 @@ namespace LazyTransportProtocol.Core.Application.Server
 				throw new AuthenticationException();
 			}
 
+			AuthenticationContext ctx = new AuthenticationContext
+			{
+				Claims = response.Claims
+			};
+
+			AuthenticationContext.Insert(request, ctx);
 			// TODO Authorization
 		}
 
