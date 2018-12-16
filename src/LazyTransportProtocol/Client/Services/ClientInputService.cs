@@ -2,7 +2,6 @@
 using LazyTransportProtocol.Client.Helpers;
 using LazyTransportProtocol.Client.Metadata;
 using LazyTransportProtocol.Client.Model;
-using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Client;
 using System;
 using System.Collections.Generic;

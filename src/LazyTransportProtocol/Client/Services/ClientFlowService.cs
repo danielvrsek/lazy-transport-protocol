@@ -1,9 +1,9 @@
-﻿using LazyTransportProtocol.Core.Application.IO;
-using LazyTransportProtocol.Core.Application.Protocol;
-using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
+﻿using LazyTransportProtocol.Core.Application.Client.Protocol;
+using LazyTransportProtocol.Core.Application.Client.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
+using LazyTransportProtocol.Core.Application.Services;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -11,8 +11,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Client.Services
 {

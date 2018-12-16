@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LazyTransportProtocol.Client.Metadata
+﻿namespace LazyTransportProtocol.Client.Metadata
 {
 	public static class CommandNameMetadata
 	{

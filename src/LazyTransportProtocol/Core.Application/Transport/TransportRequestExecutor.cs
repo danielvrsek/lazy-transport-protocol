@@ -1,4 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Handlers;
+using LazyTransportProtocol.Core.Application.Transport.Handlers;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Validators;
 using LazyTransportProtocol.Core.Application.Validators;

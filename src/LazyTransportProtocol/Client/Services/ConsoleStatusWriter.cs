@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace LazyTransportProtocol.Client.Services
 {
@@ -10,15 +8,14 @@ namespace LazyTransportProtocol.Client.Services
 		private readonly object _lock = new object();
 		private readonly string _label;
 		private readonly long _totalSize;
+		private readonly int _cursorRow;
 		private long _downloaded = 0;
 		private int _currentCursorPosition = 0;
-		private int _cursorRow;
 
 		private readonly Stopwatch _sw;
 		private long _elapsed;
 
 		private int StatusLength { get; set; } = 50;
-
 
 		public ConsoleStatusWriter(string label, long totalSize)
 		{

@@ -1,9 +1,9 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
+using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
 using System;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Validators
 {
-	public class IPv4Validator : IValidator
+	internal class IPv4Validator : IValidator
 	{
 		public bool Validate(object value)
 		{

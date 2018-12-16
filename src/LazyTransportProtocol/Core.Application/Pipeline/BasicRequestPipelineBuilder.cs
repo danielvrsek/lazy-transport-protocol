@@ -1,4 +1,4 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
+using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
@@ -6,7 +6,7 @@ using System;
 
 namespace LazyTransportProtocol.Core.Application.Pipeline
 {
-	public class BasicRequestPipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TRequest>
+	internal class BasicRequestPipelineBuilder<TRequest, TResponse> : IPipelineBuilder<TRequest>
 		where TRequest : IRequest<TResponse>
 		where TResponse : IResponse
 	{
@@ -24,7 +24,7 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 			return this;
 		}
 
-		public IPipelineBuilder<TRequest> AddPipelineFunction(Func<TRequest, TRequest> pipelineFunc)
+		public IPipelineBuilder<TRequest> AddToQueue(Func<TRequest, TRequest> pipelineFunc)
 		{
 			basicPipelineQueue.AddToQueue(pipelineFunc);
 

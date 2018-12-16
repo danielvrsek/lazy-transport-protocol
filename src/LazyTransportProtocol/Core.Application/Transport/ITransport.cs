@@ -1,9 +1,6 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Model;
+using LazyTransportProtocol.Core.Application.Transport.Model;
 using LazyTransportProtocol.Core.Domain.Abstractions;
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Transport
 {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 
 namespace LazyTransportProtocol.Client.Model
 {
@@ -27,6 +24,5 @@ namespace LazyTransportProtocol.Client.Model
 				_localFile = value;
 			}
 		}
-
 	}
 }

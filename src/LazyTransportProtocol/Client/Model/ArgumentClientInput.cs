@@ -1,11 +1,6 @@
 ﻿using LazyTransportProtocol.Client.Exceptions;
-using LazyTransportProtocol.Client.Validators;
-using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
 using static LazyTransportProtocol.Client.Model.ArgumentClientInput;
 
 namespace LazyTransportProtocol.Client.Model
@@ -26,6 +21,7 @@ namespace LazyTransportProtocol.Client.Model
 		private Behavior _behavior;
 
 		private List<IArgument<TModel>> _arguments = new List<IArgument<TModel>>();
+
 		public ArgumentClientInput(Action<TModel> actionToExecute, Behavior behavior = Behavior.ThrowException)
 		{
 			_actionToExecute = actionToExecute;

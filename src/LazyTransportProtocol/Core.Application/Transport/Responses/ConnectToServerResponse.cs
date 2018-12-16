@@ -1,9 +1,9 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions;
+using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Responses
 {
-	public class ConnectToServerResponse : ITransportResponse
+	internal class ConnectToServerResponse : IResponse
 	{
 		public IServerConnection Connection { get; set; }
 	}

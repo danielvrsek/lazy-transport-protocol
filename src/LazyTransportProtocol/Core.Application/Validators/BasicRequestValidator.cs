@@ -1,7 +1,7 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
-using LazyTransportProtocol.Core.Domain.Exceptions;
+using LazyTransportProtocol.Core.Domain.Exceptions.Validation;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,12 +1,9 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions;
+using LazyTransportProtocol.Core.Domain.Abstractions;
 using System;
-using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 {
-	public class SocketClientConnection : IClientConnection
+	internal class SocketClientConnection : IClientConnection
 	{
 		private readonly Action<byte[]> _send;
 		private readonly Action _disconnect;

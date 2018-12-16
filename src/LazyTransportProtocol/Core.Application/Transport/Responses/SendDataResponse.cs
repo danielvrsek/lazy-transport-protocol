@@ -1,9 +1,9 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions;
+using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Responses
 {
-	public class SendDataResponse : ITransportResponse
+	internal class SendDataResponse : IResponse
 	{
 		public byte[] ResponseData { get; set; }
 

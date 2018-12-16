@@ -1,11 +1,10 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Responses;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
+using LazyTransportProtocol.Core.Application.Protocol.Responses;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class DownloadFileRequest : AuthenticatedRequest<DownloadFileResponse>
+	//[Authorize(Resource = Resources.File, Action = Actions.Read)]
+	public class DownloadFileRequest : IAuthenticatedRequest<DownloadFileResponse>
 	{
 		public const string Identifier = "DOWNFILE";
 
@@ -15,7 +14,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public int Count { get; set; }
 
-		public override string GetIdentifier()
+		public string AuthenticationToken { get; set; }
+
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

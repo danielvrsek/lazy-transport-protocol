@@ -1,4 +1,3 @@
-﻿
 using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Model;
@@ -6,16 +5,14 @@ using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
-	public class ListenToIncommingDataRequestHandler : IRequestHandler<ListenToIncommingDataRequest, ListenToIncommingDataResponse>
+	internal class ListenToIncommingDataRequestHandler : IRequestHandler<ListenToIncommingDataRequest, ListenToIncommingDataResponse>
 	{
 		private ClientConnected onClientConnectedCallback;
 		private DataReceived onAllDataReceivedCallback;
@@ -98,7 +95,6 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 				});
 			}
 		}
-
 
 		public void OnDataReceived(IAsyncResult ar)
 		{
@@ -197,7 +193,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			catch { }
 		}
 
-		public class StateObject
+		internal class StateObject
 		{
 			public SocketClientConnection Connection { get; set; }
 

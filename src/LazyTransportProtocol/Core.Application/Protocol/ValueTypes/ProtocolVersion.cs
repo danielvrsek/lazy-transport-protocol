@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text;
+using System;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.ValueTypes
 {
 	public struct ProtocolVersion
 	{
 		public static ProtocolVersion Handshake { get; } = new ProtocolVersion("-1.0");
+
 		public static ProtocolVersion V1_0 { get; } = new ProtocolVersion("1.0");
 
 		public ProtocolVersion(string version)

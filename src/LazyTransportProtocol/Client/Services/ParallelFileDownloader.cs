@@ -1,16 +1,12 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
-using LazyTransportProtocol.Core.Application.Protocol.Requests;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace LazyTransportProtocol.Client.Services
 {
 	public delegate byte[] DownloadFilePart(int offset, int count);
+
 	public delegate void ExceptionHandler(Exception e);
 
 	public class ParallelFileDownloader
@@ -22,9 +18,11 @@ namespace LazyTransportProtocol.Client.Services
 		private readonly object _syncLock = new object();
 
 		public int Length { get; }
+
 		public int PartLength { get; }
 
 		public event ExceptionHandler ExceptionEvent;
+
 		public event Action<int, byte[]> FilePartDownloadedEvent;
 
 		public ParallelFileDownloader(int length, int partLength)
@@ -52,7 +50,7 @@ namespace LazyTransportProtocol.Client.Services
 
 		public void StartNew(DownloadFilePart downloadFilePart)
 		{
-			Thread workerThread = new Thread(() => 
+			Thread workerThread = new Thread(() =>
 			{
 				Download(downloadFilePart);
 				_workingThreads.TryDequeue(out Thread thread);

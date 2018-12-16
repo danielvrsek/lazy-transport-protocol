@@ -1,4 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Pipeline;
+using LazyTransportProtocol.Core.Application.Pipeline;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;

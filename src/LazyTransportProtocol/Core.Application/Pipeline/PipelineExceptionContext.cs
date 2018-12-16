@@ -1,13 +1,9 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
-using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
-using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
+using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Pipeline
 {
-	public class PipelineExceptionContext<T> : IPipelineExceptionContext<T>
+	internal class PipelineExceptionContext<T> : IPipelineExceptionContext<T>
 	{
 		public Exception Exception { get; set; }
 

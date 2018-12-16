@@ -1,11 +1,10 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
-using LazyTransportProtocol.Core.Domain.Abstractions;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Requests
 {
-	public class SendDataRequest : ITransportRequest<SendDataResponse>
+	internal class SendDataRequest : IRequest<SendDataResponse>
 	{
 		public byte[] Data { get; set; }
 

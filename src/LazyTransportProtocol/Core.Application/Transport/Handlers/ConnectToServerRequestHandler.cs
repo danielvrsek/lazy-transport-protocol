@@ -1,7 +1,7 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
-	public class ConnectToServerRequestHandler : ITransportRequestHandler<ConnectToServerRequest, ConnectToServerResponse>
+	internal class ConnectToServerRequestHandler : IRequestHandler<ConnectToServerRequest, ConnectToServerResponse>
 	{
 		public ConnectToServerResponse GetResponse(ConnectToServerRequest request)
 		{

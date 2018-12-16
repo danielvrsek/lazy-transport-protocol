@@ -1,6 +1,6 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Services;
-using LazyTransportProtocol.Core.Application.Protocol.Configuration;
-using LazyTransportProtocol.Core.Application.Protocol.Services;
+﻿using LazyTransportProtocol.Core.Application.Server.Configuration;
+using LazyTransportProtocol.Core.Application.Server.Services;
+using LazyTransportProtocol.Core.Application.Server.Services.Abstractions;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -81,7 +81,6 @@ namespace LazyTransportProtocol.Server
 				IUserService userService = new UserService();
 				userService.CreateNew("admin", "admin");
 			}
-
 		}
 
 		private static void LoadConfig(string configPath)

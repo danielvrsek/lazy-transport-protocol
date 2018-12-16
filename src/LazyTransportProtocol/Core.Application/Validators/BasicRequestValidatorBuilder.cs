@@ -1,4 +1,4 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
 using System;

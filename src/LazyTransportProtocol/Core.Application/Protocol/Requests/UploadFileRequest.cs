@@ -1,14 +1,9 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Infrastructure;
-using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
+using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class UploadFileRequest : AuthenticatedRequest<AcknowledgementResponse>
+	public class UploadFileRequest : IAuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "UPLOADFILE";
 
@@ -18,7 +13,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public int Offset { get; set; }
 
-		public override string GetIdentifier()
+		public string AuthenticationToken { get; set; }
+
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

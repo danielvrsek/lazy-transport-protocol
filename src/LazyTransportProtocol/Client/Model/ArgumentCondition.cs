@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LazyTransportProtocol.Client.Model
 {
@@ -10,7 +8,7 @@ namespace LazyTransportProtocol.Client.Model
 		{
 			return new ArgumentCondition<TModel>((parameters, model) =>
 			{
-				if (!first.Process(parameters, model) 
+				if (!first.Process(parameters, model)
 					&& !second.Process(parameters, model))
 				{
 					return false;

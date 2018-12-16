@@ -1,9 +1,9 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
+using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
 using System;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Validators
 {
-	public class PortValidator : IValidator
+	internal class PortValidator : IValidator
 	{
 		public bool Validate(object value)
 		{

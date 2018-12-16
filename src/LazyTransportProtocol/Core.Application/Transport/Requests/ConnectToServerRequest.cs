@@ -1,13 +1,10 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
-using System;
-using System.Collections.Generic;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System.Net;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Requests
 {
-	public class ConnectToServerRequest : ITransportRequest<ConnectToServerResponse>
+	internal class ConnectToServerRequest : IRequest<ConnectToServerResponse>
 	{
 		public IPAddress IPAdress { get; set; }
 

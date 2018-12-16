@@ -1,12 +1,8 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
-using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
-using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
+using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
+using LazyTransportProtocol.Core.Application.Protocol.Responses.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
@@ -35,6 +31,19 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			string serializedRequest = JsonConvert.SerializeObject(obj);
 
 			return Convert.ToBase64String(protocolEncoder.Encode(serializedRequest));
+		}
+
+		public static T Deserialize<T>(string requestBody)
+		{
+			if (requestBody == null)
+			{
+				throw new ArgumentException("Argument cannot be null.", nameof(requestBody));
+			}
+
+			IDecoder decoder = new ProtocolEncoder();
+			string decoded = decoder.Decode(Convert.FromBase64String(requestBody));
+
+			return JsonConvert.DeserializeObject<T>(decoded);
 		}
 	}
 }

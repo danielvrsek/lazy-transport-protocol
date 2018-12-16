@@ -1,6 +1,4 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
-using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
-using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
+using LazyTransportProtocol.Core.Domain.Abstractions.Pipeline;
 using System;
 using System.Collections.Generic;
 
@@ -9,12 +7,11 @@ namespace LazyTransportProtocol.Core.Application.Pipeline
 	/// <summary>
 	/// Default implemntation of the <see cref="IPipelineBuilder{T}"/>
 	/// </summary>
-	public class BasicPipelineQueue<T> : IPipelineQueue<T>
+	internal class BasicPipelineQueue<T> : IPipelineQueue<T>
 	{
 		private readonly object _lock = new object();
 
 		private List<Func<T, T>> _pipelineFuncs = new List<Func<T, T>>();
-
 		private Action<PipelineExceptionContext<T>> _onExceptionAction = null;
 		private bool _onExceptionRethrow;
 

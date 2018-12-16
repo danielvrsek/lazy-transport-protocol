@@ -1,9 +1,4 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Responses;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
-using LazyTransportProtocol.Core.Domain.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using LazyTransportProtocol.Core.Application.Protocol.Responses.Abstractions;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Responses
 {

@@ -1,11 +1,8 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Responses;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Responses
 {
-	public class EndConnectionResponse : ITransportResponse
+	internal class EndConnectionResponse : IResponse
 	{
 	}
 }

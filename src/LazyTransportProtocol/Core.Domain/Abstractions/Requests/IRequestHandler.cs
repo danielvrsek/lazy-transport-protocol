@@ -1,4 +1,4 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
+using LazyTransportProtocol.Core.Domain.Abstractions.Responses;
 using System;
 using System.Collections.Generic;
 using System.Text;

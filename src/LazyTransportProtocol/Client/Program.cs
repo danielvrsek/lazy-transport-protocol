@@ -1,16 +1,10 @@
 ﻿using LazyTransportProtocol.Client.Exceptions;
 using LazyTransportProtocol.Client.Services;
-using LazyTransportProtocol.Core.Application.IO;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Response;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Client
 {

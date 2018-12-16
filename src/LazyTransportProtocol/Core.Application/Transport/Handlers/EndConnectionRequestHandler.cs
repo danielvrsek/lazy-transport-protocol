@@ -1,16 +1,14 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
-	public class EndConnectionRequestHandler : ITransportRequestHandler<EndConnectionRequest, EndConnectionResponse>
+	internal class EndConnectionRequestHandler : IRequestHandler<EndConnectionRequest, EndConnectionResponse>
 	{
 		public EndConnectionResponse GetResponse(EndConnectionRequest request)
 		{

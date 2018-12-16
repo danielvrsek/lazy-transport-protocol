@@ -1,21 +1,17 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Infrastructure;
-using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
-using LazyTransportProtocol.Core.Application.Protocol.Infrastucture;
-using LazyTransportProtocol.Core.Application.Protocol.Metadata;
+using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
-using LazyTransportProtocol.Core.Application.Protocol.Services;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
-using System.Collections.Generic;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class ListDirectoryClientRequest : AuthenticatedRequest<ListDirectoryResponse>
+	public class ListDirectoryClientRequest : IAuthenticatedRequest<ListDirectoryResponse>
 	{
 		public const string Identifier = "HANDSHAKE";
 
 		public string Path { get; set; }
 
-		public override string GetIdentifier()
+		public string AuthenticationToken { get; set; }
+
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

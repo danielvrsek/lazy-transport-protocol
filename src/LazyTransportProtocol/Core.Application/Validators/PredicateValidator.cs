@@ -1,11 +1,9 @@
-﻿using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
+using LazyTransportProtocol.Core.Domain.Abstractions.Validators;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Validators
 {
-	public class PredicateValidator<TValue> : IValidator<TValue>, IValidator
+	internal class PredicateValidator<TValue> : IValidator<TValue>, IValidator
 	{
 		private readonly Predicate<TValue> _predicate;
 

@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace LazyTransportProtocol.Core.Domain.Exceptions
+namespace LazyTransportProtocol.Core.Domain.Exceptions.Validation
 {
 	public class ValidationException : CustomException
 	{

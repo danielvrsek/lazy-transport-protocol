@@ -1,11 +1,11 @@
-﻿using LazyTransportProtocol.Core.Application.Transport.Requests;
+using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using System;
 using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 {
-	public class SocketServerConnection : IServerConnection
+	internal class SocketServerConnection : IServerConnection
 	{
 		private TransportRequestExecutor _transportExecutor = new TransportRequestExecutor();
 

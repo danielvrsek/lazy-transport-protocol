@@ -1,14 +1,9 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Infrastructure;
-using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Requests;
+using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
-	public class ModifyUserRequest : AuthenticatedRequest<AcknowledgementResponse>
+	public class ModifyUserRequest : IAuthenticatedRequest<AcknowledgementResponse>
 	{
 		public const string Identifier = "USERMODIFY";
 
@@ -16,7 +11,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 
 		public string Password { get; set; }
 
-		public override string GetIdentifier()
+		public string AuthenticationToken { get; set; }
+
+		public string GetIdentifier()
 		{
 			return Identifier;
 		}

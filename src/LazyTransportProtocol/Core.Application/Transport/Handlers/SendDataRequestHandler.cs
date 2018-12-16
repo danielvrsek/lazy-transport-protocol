@@ -1,20 +1,15 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Extensions;
-using LazyTransportProtocol.Core.Application.Protocol.Services;
-using LazyTransportProtocol.Core.Application.Transport.Abstractions.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
-using LazyTransportProtocol.Core.Domain.Abstractions.Common;
-using LazyTransportProtocol.Core.Domain.Exceptions;
+using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 {
-	public class SendDataRequestHandler : ITransportRequestHandler<SendDataRequest, SendDataResponse>
+	internal class SendDataRequestHandler : IRequestHandler<SendDataRequest, SendDataResponse>
 	{
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
