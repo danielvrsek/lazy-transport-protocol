@@ -7,11 +7,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Abstractions.Services
 {
 	public interface IUserService
 	{
-		bool Exists(string username);
+		bool Exists(string username, string password);
 
-		UserSecret CreateNew(UserSecret userSecret);
+		UserSecret CreateNew(string username, string password);
 
-		UserSecret Modify(UserSecret userSecret);
+		UserSecret Modify(string username, string password);
 
 		void Delete(string username);
 	}

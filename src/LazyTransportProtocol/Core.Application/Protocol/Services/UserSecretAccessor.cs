@@ -35,8 +35,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		public UserSecret InsertNewSercret(UserSecret secretInfo)
 		{
-			EnsureFileExists();
-
 			using (StreamWriter sw = new StreamWriter(_filePath, true))
 			{
 				sw.WriteLine(SerializeSecret(secretInfo));
@@ -47,8 +45,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		public void DeleteSecret(string username)
 		{
-			EnsureFileExists();
-
 			string[] lines;
 
 			using (StreamReader sr = new StreamReader(_filePath))
@@ -81,8 +77,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		private UserSecret[] GetAllLines()
 		{
-			EnsureFileExists();
-
 			string fileContents = null;
 
 			using (StreamReader sr = new StreamReader(_filePath))
@@ -110,24 +104,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			return $"{userSecret.Username};{userSecret.Password}";
 		}
-
-		private void EnsureFileExists()
-		{
-			if (!File.Exists(_filePath))
-			{
-				string directoryName = Path.GetDirectoryName(_filePath);
-				if (!Directory.Exists(directoryName))
-				{
-					Directory.CreateDirectory(directoryName);
-				}
-
-				using (StreamWriter file = new StreamWriter(_filePath))
-				{
-					file.WriteLine("#########");
-				}
-			}
-		}
-
 		#endregion Private members
 	}
 }

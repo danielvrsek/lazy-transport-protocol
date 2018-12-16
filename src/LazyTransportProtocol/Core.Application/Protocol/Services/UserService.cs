@@ -8,20 +8,32 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class UserService : IUserService
 	{
-		public UserSecret CreateNew(UserSecret userSecret)
+		public UserSecret CreateNew(string username, string password)
 		{
 			IUserSecretAccessor secretAccessor = new UserSecretAccessor();
 
-			return secretAccessor.InsertNewSercret(userSecret);
+			IPasswordEncryptor passwordEncryptor = new Sha1PasswordEncryptor();
+			string encryptedPassword = passwordEncryptor.Encrypt(password);
+
+			return secretAccessor.InsertNewSercret(new UserSecret
+			{
+				Username = username,
+				Password = encryptedPassword
+			});
 		}
 
-		public UserSecret Modify(UserSecret userSecret)
+		public UserSecret Modify(string username, string password)
 		{
 			IUserSecretAccessor secretAccessor = new UserSecretAccessor();
 
-			secretAccessor.ModifySecret(userSecret);
+			IPasswordEncryptor passwordEncryptor = new Sha1PasswordEncryptor();
+			string encryptedPassword = passwordEncryptor.Encrypt(password);
 
-			return userSecret;
+			return secretAccessor.ModifySecret(new UserSecret
+			{
+				Username = username,
+				Password = encryptedPassword
+			});
 		}
 
 		public void Delete(string username)
@@ -31,9 +43,16 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			secretAccessor.DeleteSecret(username);
 		}
 
-		public bool Exists(string username)
+		public bool Exists(string username, string password)
 		{
-			throw new NotImplementedException();
+			IUserSecretAccessor secretAccessor = new UserSecretAccessor();
+
+			IPasswordEncryptor passwordEncryptor = new Sha1PasswordEncryptor();
+			string encryptedPassword = passwordEncryptor.Encrypt(password);
+
+			UserSecret userSecret = secretAccessor.GetSecretForUsername(username);
+
+			return encryptedPassword == userSecret?.Password;
 		}
 	}
 }

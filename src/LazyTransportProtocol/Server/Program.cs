@@ -1,12 +1,11 @@
-﻿using LazyTransportProtocol.Core.Application.Protocol.Configuration;
+﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Services;
+using LazyTransportProtocol.Core.Application.Protocol.Configuration;
+using LazyTransportProtocol.Core.Application.Protocol.Services;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 
 namespace LazyTransportProtocol.Server
 {
@@ -33,11 +32,56 @@ namespace LazyTransportProtocol.Server
 				Console.ReadLine();
 				return;
 			}
+			try
+			{
+				LoadConfig("config.cfg");
 
-			LoadConfig("config.cfg");
+				CreateFileSecretIfNotExist();
+
+				CheckIfRootFolderExists();
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+				Console.WriteLine("Exiting...");
+				return;
+			}
 
 			ProtocolRequestListener listener = new ProtocolRequestListener();
 			listener.Listen(ipAddress, port);
+		}
+
+		private static void CheckIfRootFolderExists()
+		{
+			ServerConfiguration serverConfig = ServerConfiguration.Instance();
+
+			if (!Directory.Exists(serverConfig.RootFolder))
+			{
+				throw new Exception("Root folder must exist.");
+			}
+		}
+
+		private static void CreateFileSecretIfNotExist()
+		{
+			ServerConfiguration serverConfig = ServerConfiguration.Instance();
+
+			if (!File.Exists(serverConfig.UserSecretFilepath))
+			{
+				string directoryName = Path.GetDirectoryName(serverConfig.UserSecretFilepath);
+				if (!String.IsNullOrEmpty(directoryName) && !Directory.Exists(directoryName))
+				{
+					Directory.CreateDirectory(directoryName);
+				}
+
+				using (StreamWriter file = new StreamWriter(serverConfig.UserSecretFilepath))
+				{
+					file.WriteLine("#########");
+				}
+
+				IUserService userService = new UserService();
+				userService.CreateNew("admin", "admin");
+			}
+
 		}
 
 		private static void LoadConfig(string configPath)

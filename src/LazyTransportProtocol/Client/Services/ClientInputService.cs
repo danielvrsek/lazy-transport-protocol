@@ -36,18 +36,6 @@ namespace LazyTransportProtocol.Client.Services
 						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, 1)
 							.PromtIfEmpty("Local file"))).Execute;
 
-			_commandDictionary[CommandNameMetadata.Download + "_single"] = new ArgumentClientInput<DownloadFileClientInputModel>(model => _clientFlowService.DownloadFileSingleConnection(model.RemoteFile, model.LocalFile))
-				.RegisterArgument(
-					ArgumentCondition.Or(
-						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, "-r", "--remote"),
-						Argument.Create<DownloadFileClientInputModel>((param, model) => model.RemoteFile = param, 0)
-							.PromtIfEmpty("Remote file")))
-				.RegisterArgument(
-					ArgumentCondition.Or(
-						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, "-l", "--local"),
-						Argument.Create<DownloadFileClientInputModel>((param, model) => model.LocalFile = param, 1)
-							.PromtIfEmpty("Local file"))).Execute;
-
 			_commandDictionary[CommandNameMetadata.ChangeDirectory] = new ArgumentClientInput<ChangeDirectoryClientInputModel>(model => _clientFlowService.ChangeDirectory(model.Path))
 				.RegisterArgument(
 					ArgumentCondition.Or(

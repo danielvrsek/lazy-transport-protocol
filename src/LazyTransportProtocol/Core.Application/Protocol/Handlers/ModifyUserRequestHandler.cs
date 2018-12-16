@@ -18,11 +18,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 		{
 			IUserService userService = new UserService();
 
-			userService.Modify(new UserSecret
-			{
-				Username = request.Username,
-				Password = request.Password
-			});
+			userService.Modify(request.Username, request.Password);
 
 			return new AcknowledgementResponse
 			{

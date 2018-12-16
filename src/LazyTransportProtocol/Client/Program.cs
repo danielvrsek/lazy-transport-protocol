@@ -66,6 +66,7 @@ namespace LazyTransportProtocol.Client
 			catch (CommandException commandException)
 			{
 				Console.WriteLine(commandException.Message);
+				return true;
 			}
 			catch (InvalidResponseException)
 			{
@@ -78,9 +79,9 @@ namespace LazyTransportProtocol.Client
 			catch (Exception e)
 			{
 				Console.WriteLine(e.Message);
-				Console.ReadLine();
 			}
 
+			Console.ReadLine();
 			return false;
 		}
 	}

@@ -12,12 +12,9 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 	{
 		public bool Authenticate(string username, string password)
 		{
-			string encryptedPassword = new Sha1PasswordEncryptor().Encrypt(password);
+			IUserService userService = new UserService();
 
-			IUserSecretAccessor userSecretAccessor = new UserSecretAccessor();
-			UserSecret secretInfo = userSecretAccessor.GetSecretForUsername(username);
-
-			return secretInfo?.Password == encryptedPassword ? true : false;
+			return userService.Exists(username, password);
 		}
 	}
 }

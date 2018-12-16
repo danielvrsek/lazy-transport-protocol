@@ -136,66 +136,6 @@ namespace LazyTransportProtocol.Client.Services
 			return helperExecutors.Take(count).ToArray();
 		}
 
-		public void DownloadFileSingleConnection(string remoteFilepath, string localFilepath)
-		{
-			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
-
-			int offset = 0;
-			int count = 512 * 1024;
-
-			string remoteDirectory = Path.GetDirectoryName(remoteFilepath);
-			string remoteFilename = Path.GetFileName(remoteFilepath);
-
-			var lsResponse = remoteExecutor.Execute(new ListDirectoryClientRequest
-			{
-				Path = remoteDirectory,
-				AuthenticationToken = authenticationToken
-			});
-
-			RemoteFile remoteFileInfo = lsResponse.RemoteFiles.FirstOrDefault(x => x.Filename == remoteFilename);
-
-			if (remoteFileInfo == null)
-			{
-				throw new CustomException("File does not exist on the remote machine.");
-			}
-
-			var sw = Stopwatch.StartNew();
-
-			using (ConsoleStatusWriter statusWriter = new ConsoleStatusWriter("Downloading...", remoteFileInfo.Size))
-			{
-				if (File.Exists(localFilepath))
-				{
-					File.Delete(localFilepath);
-				}
-
-				DownloadFileResponse response;
-
-				using (FileStream fs = File.OpenWrite(localFilepath))
-				using (BinaryWriter bw = new BinaryWriter(fs))
-				{
-					do
-					{
-						response = remoteExecutor.Execute(new DownloadFileRequest
-						{
-							Filepath = remoteFilepath,
-							Offset = offset,
-							Count = count,
-							AuthenticationToken = authenticationToken
-						});
-
-						bw.Write(response.Data);
-
-						offset += response.Data.Length;
-
-						statusWriter.Update(response.Data.Length);
-					}
-					while (response.HasNext);
-				}
-			}
-
-			Console.WriteLine("Completed in: " + sw.ElapsedMilliseconds / (double)1000 + "s");
-		}
-
 		public void DownloadFile(string remoteFilepath, string localFilepath)
 		{
 			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
@@ -242,7 +182,8 @@ namespace LazyTransportProtocol.Client.Services
 				parallelFileDownloader.Wait();
 			}
 
-			Console.WriteLine("Completed in: " + sw.ElapsedMilliseconds / (double)1000 + "s");
+			sw.Stop();
+			WriteStatistics(sw.ElapsedMilliseconds, remoteFileInfo.Size);
 		}
 
 		private void ParallelFileDownloader_FilePartDownloadedEvent(ParallelFileWriter writer, ConsoleStatusWriter statusWriter, int partNumber, byte[] data)
@@ -255,63 +196,81 @@ namespace LazyTransportProtocol.Client.Services
 		{
 			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
 
-			int count = 15000;
-			int offset = 0;
-			int index = 0;
-
 			FileInfo localFileInfo = new FileInfo(localFilepath);
 			long localFileSize = localFileInfo.Length;
 
-			ConsoleStatusWriter statusWriter = new ConsoleStatusWriter("Uploading...", localFileSize);
+			Stopwatch sw = Stopwatch.StartNew();
 
-			AcknowledgementResponse response;
-			byte[] buffer;
-
-			try
+			using (ConsoleStatusWriter statusWriter = new ConsoleStatusWriter("Uploading...", localFileSize))
 			{
-				using (FileStream fs = File.OpenRead(localFilepath))
-				using (BinaryReader br = new BinaryReader(fs))
+				try
 				{
-					do
+					int count = 512 * 1024;
+					int offset = 0;
+
+					byte[] buffer;
+
+					using (FileStream fs = File.OpenRead(localFilepath))
+					using (BinaryReader br = new BinaryReader(fs))
 					{
-						buffer = br.ReadBytes(count);
-
-						response = remoteExecutor.Execute(new UploadFileRequest
+						do
 						{
-							Path = remoteFilepath,
-							Data = buffer,
-							Offset = offset
-						});
+							buffer = br.ReadBytes(count);
 
-						offset += buffer.Length;
+							AcknowledgementResponse response = remoteExecutor.Execute(new UploadFileRequest
+							{
+								Path = remoteFilepath,
+								Data = buffer,
+								Offset = offset
+							});
 
-						if (!response.IsSuccessful)
-						{
-							throw new CustomException("Error while uploading.");
+							offset += buffer.Length;
+							statusWriter.Update(buffer.Length);
+
+							if (!response.IsSuccessful)
+							{
+								throw new CustomException("Error while uploading.");
+							}
 						}
+						while (buffer.Length == count);
 					}
-					while (buffer.Length == count);
+				}
+				catch (IOException e)
+				{
+					throw new CustomException(e.Message);
 				}
 			}
-			catch (IOException e)
-			{
-				throw new CustomException(e.Message);
-			}
-			finally
-			{
-				Console.CursorVisible = true;
-				Console.WriteLine();
-			}
+			sw.Stop();
+			WriteStatistics(sw.ElapsedMilliseconds, localFileSize);
+		}
+
+		private void WriteStatistics(long elapsedMilliseconds, long fileSizeBytes)
+		{
+			double elapsedSeconds = elapsedMilliseconds / (double)1000;
+			double fileSize = fileSizeBytes / 1024;
+
+			Console.Write("Completed in: " + elapsedSeconds + "s, ");
+			Console.Write("Filesize: " + fileSize.ToString("0") + "kB, ");
+			Console.WriteLine("Average speed: " + (fileSize * 8 / elapsedMilliseconds).ToString("0.##") + " Mbit/s");
 		}
 
 		public void ChangeDirectory(string folder)
 		{
-			CurrentFolder = Path.IsPathRooted(folder) ? folder : Path.Combine(CurrentFolder, folder);
+			string remoteDirectory = Path.IsPathRooted(folder) ? folder : Path.Combine(CurrentFolder, folder);
+
+			remoteExecutor.Execute(new ListDirectoryClientRequest
+			{
+				Path = remoteDirectory,
+				AuthenticationToken = authenticationToken
+			});
+
+			CurrentFolder = remoteDirectory;
 		}
 
 		public void Disconnect()
 		{
 			remoteExecutor.Disconnect();
+			helperExecutors.ForEach(x => x.Disconnect());
 		}
 	}
 }

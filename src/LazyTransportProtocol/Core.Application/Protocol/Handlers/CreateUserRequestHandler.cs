@@ -17,18 +17,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Handlers
 		public AcknowledgementResponse GetResponse(CreateUserRequest request)
 		{
 			IUserService userService = new UserService();
-			IPasswordEncryptor passwordEncryptor = new Sha1PasswordEncryptor();
-			string encryptedPassword = passwordEncryptor.Encrypt(request.Password);
-
 			bool isSuccessful = true;
 
 			try
 			{
-				userService.CreateNew(new UserSecret
-				{
-					Username = request.Username,
-					Password = encryptedPassword
-				});
+				userService.CreateNew(request.Username, request.Password);
 			}
 			catch
 			{

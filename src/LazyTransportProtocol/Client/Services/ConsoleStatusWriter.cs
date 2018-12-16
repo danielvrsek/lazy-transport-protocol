@@ -28,6 +28,7 @@ namespace LazyTransportProtocol.Client.Services
 			_sw = Stopwatch.StartNew();
 
 			Console.CursorVisible = false;
+			Write();
 		}
 
 		public void Update(int offset)
@@ -37,7 +38,7 @@ namespace LazyTransportProtocol.Client.Services
 			Write();
 		}
 
-		public void Write()
+		private void Write()
 		{
 			double percentage = (double)_downloaded / _totalSize;
 			int completed = (int)(percentage * StatusLength);
