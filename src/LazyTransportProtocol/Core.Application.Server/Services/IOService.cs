@@ -16,17 +16,13 @@ namespace LazyTransportProtocol.Core.Application.Server.Services
 		{
 			string rootFolder = GetAbsoluteRootFolder();
 
-			path = Uri.UnescapeDataString(path);
-
 			if (Path.IsPathRooted(path))
 			{
 				string pathRoot = Path.GetPathRoot(path);
 				path = path.Substring(pathRoot.Length);
 			}
 
-			string combined = Path.Combine(rootFolder, path);
-
-			return combined;
+			return Path.Combine(rootFolder, path);
 		}
 
 		public static string GetAbsoluteRootFolder()
@@ -38,7 +34,7 @@ namespace LazyTransportProtocol.Core.Application.Server.Services
 				rootFolder = Path.Combine(_currentDirectory, rootFolder);
 			}
 
-			return rootFolder;
+			return Uri.UnescapeDataString(rootFolder);
 		}
 
 		public static string CreateDirectory(string path)

@@ -51,7 +51,6 @@ namespace LazyTransportProtocol.Core.Application.Client.Protocol
 			string requestBody = ProtocolBodySerializer.Serialize(request);
 			string requestIdentifier = request.GetIdentifier();
 			string requestString = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody);
-			byte[] requestEncoded = _encoder.Encode(requestString);
 
 			byte[] responseEncoded = _connection.Send(requestEncoded);
 			string responseDecoded = _encoder.Decode(responseEncoded);

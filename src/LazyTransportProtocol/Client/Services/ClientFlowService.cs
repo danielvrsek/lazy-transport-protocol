@@ -138,8 +138,8 @@ namespace LazyTransportProtocol.Client.Services
 		{
 			remoteFilepath = Path.IsPathRooted(remoteFilepath) ? remoteFilepath : Path.Combine(CurrentFolder, remoteFilepath);
 
-			string remoteDirectory = Path.GetDirectoryName(remoteFilepath);
 			string remoteFilename = Path.GetFileName(remoteFilepath);
+			string remoteDirectory = remoteFilepath.Substring(0, remoteFilepath.Length - remoteFilename.Length);
 
 			var lsResponse = remoteExecutor.Execute(new ListDirectoryClientRequest
 			{

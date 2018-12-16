@@ -99,13 +99,15 @@ namespace LazyTransportProtocol.Server
 						request = ProtocolBodySerializer.Deserialize<TRequest>(requestObject.Body);
 						protocolResponse = executor.Execute(request);
 					}
-					catch (AuthorizationException)
+					catch (AuthorizationException e)
 					{
 						protocolResponse = new ErrorResponse
 						{
 							Code = 403,
 							Message = "Unauthorized."
 						};
+
+						Console.WriteLine("AuthorizationException: " + e.Message + e.StackTrace);
 					}
 					catch (CustomException e)
 					{
@@ -114,14 +116,18 @@ namespace LazyTransportProtocol.Server
 							Code = 400,
 							Message = e.Message
 						};
+
+						Console.WriteLine("CustomException: " + e.Message + e.StackTrace);
 					}
-					catch (Exception)
+					catch (Exception e)
 					{
 						protocolResponse = new ErrorResponse
 						{
 							Code = 500,
 							Message = "Internal server error."
 						};
+
+						Console.WriteLine("UnhandledException: " + e.Message + e.StackTrace);
 					}
 				}
 

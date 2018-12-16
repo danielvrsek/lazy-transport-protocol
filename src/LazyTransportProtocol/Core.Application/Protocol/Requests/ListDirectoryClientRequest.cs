@@ -5,7 +5,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Requests
 {
 	public class ListDirectoryClientRequest : IAuthenticatedRequest<ListDirectoryResponse>
 	{
-		public const string Identifier = "HANDSHAKE";
+		public const string Identifier = "LIST";
 
 		public string Path { get; set; }
 
