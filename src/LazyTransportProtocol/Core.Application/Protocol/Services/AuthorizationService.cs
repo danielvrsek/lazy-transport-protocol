@@ -1,5 +1,6 @@
 ﻿using LazyTransportProtocol.Core.Application.Protocol.Abstractions.Infrastructure;
 using LazyTransportProtocol.Core.Application.Protocol.Configuration;
+using LazyTransportProtocol.Core.Application.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,7 +31,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			string systemPath = IOService.TransformPath(path);
 
-			string rel = Path.GetRelativePath(_serverConfiguration.RootFolder, systemPath);
+			string rel = PathExt.GetRelativePath(_serverConfiguration.RootFolder, systemPath);
 
 			if (rel.StartsWith(".."))
 			{

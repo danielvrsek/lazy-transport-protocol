@@ -29,10 +29,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol
 		private readonly IDecoder _decoder = new ProtocolDecoder();
 		private readonly ITransport _transport = new TransportLayer();
 
-		private const string _separator = ";";
-		private readonly ProtocolVersion _protocolVersion = ProtocolVersion.V1_0;
-		private const int _maxRequestLength = 2048;
-
 		public void Connect(IRemoteConnectionParameters parameters)
 		{
 			Connect((SocketConnectionParameters)parameters);

@@ -45,12 +45,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		public void DeleteSecret(string username)
 		{
-			string[] lines;
-
-			using (StreamReader sr = new StreamReader(_filePath))
-			{
-				lines = sr.ReadToEnd().Split(Environment.NewLine);
-			}
+			string[] lines = ReadFile();
 
 			string[] newLines = lines.Where(x => !x.StartsWith(username)).ToArray();
 
@@ -77,16 +72,27 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 		private UserSecret[] GetAllLines()
 		{
-			string fileContents = null;
+			string[] lines = ReadFile();
+
+			return lines.Where(line => !line.StartsWith("#") && !String.IsNullOrWhiteSpace(line)).Select(line => ParseLine(line)).ToArray();
+		}
+
+		private string[] ReadFile()
+		{
+			List<string> lines = new List<string>();
 
 			using (StreamReader sr = new StreamReader(_filePath))
 			{
-				fileContents = sr.ReadToEnd();
+				string line = sr.ReadLine();
+				
+				while (line != null)
+				{
+					lines.Add(line);
+					line = sr.ReadLine();
+				}
 			}
 
-			string[] lines = fileContents.Split(Environment.NewLine);
-
-			return lines.Where(line => !line.StartsWith("#") && !String.IsNullOrWhiteSpace(line)).Select(line => ParseLine(line)).ToArray();
+			return lines.ToArray();
 		}
 
 		private UserSecret ParseLine(string line)

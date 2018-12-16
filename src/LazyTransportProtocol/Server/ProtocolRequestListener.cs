@@ -9,6 +9,7 @@ using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Services;
 using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using LazyTransportProtocol.Core.Application.Transport;
+using LazyTransportProtocol.Core.Application.Transport.Model;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Abstractions.Common;
@@ -152,7 +153,7 @@ namespace LazyTransportProtocol.Server
 
 		private static void OnErrorOccured(ErrorContext ctx)
 		{
-			string message = ctx?.Exception?.Message ?? ctx.SocketError?.ToString() ?? "Unidentified error occured.";
+			string message = ctx?.Exception?.Message ?? "Unidentified error occured.";
 
 			Console.WriteLine(message);
 		}

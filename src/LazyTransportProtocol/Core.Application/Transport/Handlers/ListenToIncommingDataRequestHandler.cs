@@ -1,6 +1,7 @@
 ﻿
 using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
+using LazyTransportProtocol.Core.Application.Transport.Model;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
@@ -111,11 +112,6 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 				{
 					if (error != SocketError.Success)
 					{
-						onErrorOccuredCallback(new ErrorContext
-						{
-							SocketError = error
-						});
-
 						Disconnect(handler);
 						return;
 					}

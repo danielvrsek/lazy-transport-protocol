@@ -1,4 +1,5 @@
 ﻿using LazyTransportProtocol.Core.Application.Protocol.Configuration;
+using LazyTransportProtocol.Core.Application.Services;
 using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
@@ -126,14 +127,14 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateDirectories(systemPath).Select(x => Path.GetRelativePath(systemPath, x)).ToArray();
+			return Directory.EnumerateDirectories(systemPath).Select(x => PathExt.GetRelativePath(systemPath, x)).ToArray();
 		}
 
 		public static string[] GetFiles(string path)
 		{
 			string systemPath = TransformPath(path);
 
-			return Directory.EnumerateFiles(systemPath).Select(x => Path.GetRelativePath(systemPath, x)).ToArray();
+			return Directory.EnumerateFiles(systemPath).Select(x => PathExt.GetRelativePath(systemPath, x)).ToArray();
 		}
 
 		public static FileInfo GetFileInfo(string filePath)

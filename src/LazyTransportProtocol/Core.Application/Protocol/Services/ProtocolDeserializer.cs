@@ -14,7 +14,7 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 		{
 			Contract.Requires(!String.IsNullOrWhiteSpace(requestString));
 
-			string controlSeparator = ";";
+			char controlSeparator = ';';
 
 			string[] split = requestString.Split(controlSeparator);
 

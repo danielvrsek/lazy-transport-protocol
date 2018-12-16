@@ -17,7 +17,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Extensions
 
 			for (int i = 0; i < data.Length; i++, segmentIndex++)
 			{
-				if (segment[segmentIndex] != data[i])
+				if (segment.Array[segment.Offset + segmentIndex] != data[i])
 				{
 					return false;
 				}

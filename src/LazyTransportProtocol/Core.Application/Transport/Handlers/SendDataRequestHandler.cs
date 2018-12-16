@@ -42,7 +42,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			byte[] dataLengthBytes = new byte[4];
 			socket.Receive(dataLengthBytes);
 
-			int dataLength = BitConverter.ToInt32(dataLengthBytes);
+			int dataLength = BitConverter.ToInt32(dataLengthBytes, 0);
 
 			byte[] data = new byte[dataLength];
 
