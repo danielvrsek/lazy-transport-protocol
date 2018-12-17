@@ -11,7 +11,11 @@ using LazyTransportProtocol.Core.Domain.Abstractions;
 using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
+using System.Reflection;
 
 namespace LazyTransportProtocol.Server
 {
@@ -19,11 +23,33 @@ namespace LazyTransportProtocol.Server
 	{
 		private static ProtocolRequestExecutor executor = new ProtocolRequestExecutor();
 		private static TransportLayer transportLayer = new TransportLayer();
+		private static AvailableRequestsContainer _availableRequests;
+
+		private static MethodInfo _executeMethod;
 
 		public void Listen(IPAddress ipAddress, int port)
 		{
+			Console.WriteLine("Initializing...");
+			SetExecuteMethod();
+			Console.WriteLine("Registering available requests...");
+			RegisterRequests();
 			Console.WriteLine("Waiting for connection..");
 			transportLayer.Listen(ipAddress, port, OnClientConnected, OnDataReceived, OnErrorOccured);
+		}
+
+		private void RegisterRequests()
+		{
+			_availableRequests = new AvailableRequestsContainer();
+			_availableRequests.RegisterByType<IProtocolRequest<IProtocolResponse>>(req => req.GetIdentifier());
+
+			string requests = String.Join(", ", _availableRequests.GetAll().Select(x => x.Key));
+			Console.WriteLine("Available requests: ");
+			Console.WriteLine(requests);
+		}
+
+		private void SetExecuteMethod()
+		{
+			_executeMethod = typeof(ProtocolRequestListener).GetMethod(nameof(Execute), BindingFlags.NonPublic | BindingFlags.Static);
 		}
 
 		public static void OnClientConnected(IClientConnection connection)
@@ -47,47 +73,34 @@ namespace LazyTransportProtocol.Server
 					Console.WriteLine(e.Message);
 				}
 
-				ArraySegment<byte> serializedResponse = null;
-
 				string controlCommand = encoder.Decode(requestObject.ControlCommand);
 
-				switch (controlCommand)
+				ArraySegment<byte> serializedResponse = null;
+				Type requestType = _availableRequests.GetRequestType(controlCommand);
+				if (requestType != null)
 				{
-					case CreateUserRequest.Identifier:
-						serializedResponse = Execute<CreateUserRequest, AcknowledgementResponse>(requestObject.Body);
-						break;
-
-					case DeleteUserRequest.Identifier:
-						serializedResponse = Execute<DeleteUserRequest, AcknowledgementResponse>(requestObject.Body);
-						break;
-
-					case AuthenticationRequest.Identifier:
-						serializedResponse = Execute<AuthenticationRequest, AuthenticationResponse>(requestObject.Body);
-						break;
-
-					case ListDirectoryClientRequest.Identifier:
-						serializedResponse = Execute<ListDirectoryClientRequest, ListDirectoryResponse>(requestObject.Body);
-						break;
-
-					case DownloadFileRequest.Identifier:
-						serializedResponse = Execute<DownloadFileRequest, DownloadFileResponse>(requestObject.Body);
-						break;
-
-					case CreateDirectoryRequest.Identifier:
-						serializedResponse = Execute<CreateDirectoryRequest, AcknowledgementResponse>(requestObject.Body);
-						break;
-
-					case UploadFileRequest.Identifier:
-						serializedResponse = Execute<UploadFileRequest, AcknowledgementResponse>(requestObject.Body);
-						break;
-
-					default:
+					try
+					{
+						Type protocolRequestInterface = requestType.GetInterfaces().FirstOrDefault(x => typeof(IProtocolRequest<IProtocolResponse>).IsAssignableFrom(x));
+						Type responseType = protocolRequestInterface.GenericTypeArguments[0];
+						serializedResponse = (ArraySegment<byte>)_executeMethod.MakeGenericMethod(requestType, responseType).Invoke(null, new object[] { requestObject.Body });
+					}
+					catch
+					{
 						serializedResponse = SerializeResponse(new ErrorResponse
 						{
-							Code = 400,
-							Message = "Unsupported request."
+							Code = 500,
+							Message = "Internal server error."
 						});
-						break;
+					}
+				}
+				else
+				{
+					serializedResponse = SerializeResponse(new ErrorResponse
+					{
+						Code = 400,
+						Message = "Unsupported request."
+					});
 				}
 
 				connection.Send(serializedResponse);

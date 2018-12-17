@@ -20,14 +20,14 @@ namespace LazyTransportProtocol.Core.Application.Server.Protocol
 				{
 					if (request is IAuthenticatedRequest<IProtocolResponse> authenticatedRequest)
 					{
-						ValidateAuthorization(authenticatedRequest);
+						ValidateAuthentication(authenticatedRequest);
 					}
 
 					return request;
 				});
 		}
 
-		private void ValidateAuthorization(IAuthenticatedRequest<IProtocolResponse> request)
+		private void ValidateAuthentication(IAuthenticatedRequest<IProtocolResponse> request)
 		{
 			var response = Execute(new ValidateAuthenticationRequest
 			{

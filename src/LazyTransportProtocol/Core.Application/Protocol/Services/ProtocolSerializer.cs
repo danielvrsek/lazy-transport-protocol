@@ -5,8 +5,6 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolSerializer
 	{
-		private static byte[] _cachedArray;
-
 		public static ArraySegment<byte> Serialize(byte[] identifier, byte[] headers, byte[] body)
 		{
 			byte[] identifierLength = BitConverter.GetBytes(identifier.Length);
@@ -15,20 +13,17 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 
 			int totalLength = identifier.Length + headers.Length + body.Length + 12; // 3 x 4 bytes for length of message parts
 
-			if (_cachedArray == null || _cachedArray.Length < totalLength)
-			{
-				_cachedArray = new byte[totalLength];
-			}
+			byte[] buffer = new byte[totalLength];
 
 			int offset = 0;
-			CopyToArray(_cachedArray, identifierLength, ref offset);
-			CopyToArray(_cachedArray, headersLength, ref offset);
-			CopyToArray(_cachedArray, bodyLength, ref offset);
-			CopyToArray(_cachedArray, identifier, ref offset);
-			CopyToArray(_cachedArray, headers, ref offset);
-			CopyToArray(_cachedArray, body, ref offset);
+			CopyToArray(buffer, identifierLength, ref offset);
+			CopyToArray(buffer, headersLength, ref offset);
+			CopyToArray(buffer, bodyLength, ref offset);
+			CopyToArray(buffer, identifier, ref offset);
+			CopyToArray(buffer, headers, ref offset);
+			CopyToArray(buffer, body, ref offset);
 
-			return new ArraySegment<byte>(_cachedArray, 0, totalLength);
+			return new ArraySegment<byte>(buffer, 0, totalLength);
 		}
 
 		public static MediumDeserializedObject Deserialize(byte[] requestSerialized)
@@ -38,6 +33,11 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 			int bodyLength = BitConverter.ToInt32(requestSerialized, 8);
 
 			int offset = 12;
+
+			if (requestSerialized.Length - offset != identifierLength + headersLength + bodyLength)
+			{
+				throw new Exception("Request length is invalid.");
+			}
 
 			ArraySegment<byte> identifier = new ArraySegment<byte>(requestSerialized, offset, identifierLength);
 			offset += identifierLength;

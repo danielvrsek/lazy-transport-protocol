@@ -36,7 +36,7 @@ namespace LazyTransportProtocol.Core.Application
 			Register();
 		}
 
-		public virtual TResponse Execute<TResponse>(IRequest<TResponse> request)
+		public TResponse Execute<TResponse>(IRequest<TResponse> request)
 			where TResponse : class, IResponse
 		{
 			RequestHandlerDelegate<IRequest<IResponse>, IResponse> handlerDelegate;
@@ -46,10 +46,10 @@ namespace LazyTransportProtocol.Core.Application
 			return (TResponse)handlerDelegate(request);
 		}
 
-		public virtual Task<TResponse> ExecuteAsync<TResponse>(IRequest<TResponse> request)
+		public Task<TResponse> ExecuteAsync<TResponse>(IRequest<TResponse> request)
 			where TResponse : class, IResponse
 		{
-			return Task.Factory.StartNew((r) => Execute((IRequest<TResponse>)r), request);
+			return Task.Run(() => Execute(request));
 		}
 
 		public abstract void Register();
