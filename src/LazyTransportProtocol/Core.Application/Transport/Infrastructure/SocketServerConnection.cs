@@ -1,6 +1,7 @@
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Domain.Abstractions;
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
@@ -16,7 +17,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 
 		public Socket Sender { get; }
 
-		public byte[] Send(ArraySegment<byte> data)
+		public byte[] Send(IList<ArraySegment<byte>> data)
 		{
 			var response = _transportExecutor.Execute(new SendDataRequest
 			{

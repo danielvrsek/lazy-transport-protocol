@@ -11,6 +11,7 @@ using LazyTransportProtocol.Core.Domain.Exceptions;
 using LazyTransportProtocol.Core.Domain.Exceptions.Client;
 using LazyTransportProtocol.Core.Domain.Exceptions.Response;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace LazyTransportProtocol.Core.Application.Client.Protocol
@@ -50,7 +51,7 @@ namespace LazyTransportProtocol.Core.Application.Client.Protocol
 			byte[] requestHeaders = ProtocolMessageHeaderSerializer.Serialize(headers);
 			byte[] requestBody = ProtocolBodySerializer.Serialize(request);
 			byte[] requestIdentifier = _encoder.Encode(request.GetIdentifier());
-			ArraySegment<byte> serializedRequest = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody);
+			IList<ArraySegment<byte>> serializedRequest = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody);
 
 			byte[] responseEncoded = _connection.Send(serializedRequest);
 

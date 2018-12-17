@@ -1,29 +1,26 @@
 using LazyTransportProtocol.Core.Application.Protocol.Model;
 using System;
+using System.Collections.Generic;
 
 namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolSerializer
 	{
-		public static ArraySegment<byte> Serialize(byte[] identifier, byte[] headers, byte[] body)
+		public static IList<ArraySegment<byte>> Serialize(byte[] identifier, byte[] headers, byte[] body)
 		{
 			byte[] identifierLength = BitConverter.GetBytes(identifier.Length);
 			byte[] headersLength = BitConverter.GetBytes(headers.Length);
 			byte[] bodyLength = BitConverter.GetBytes(body.Length);
 
-			int totalLength = identifier.Length + headers.Length + body.Length + 12; // 3 x 4 bytes for length of message parts
-
-			byte[] buffer = new byte[totalLength];
-
-			int offset = 0;
-			CopyToArray(buffer, identifierLength, ref offset);
-			CopyToArray(buffer, headersLength, ref offset);
-			CopyToArray(buffer, bodyLength, ref offset);
-			CopyToArray(buffer, identifier, ref offset);
-			CopyToArray(buffer, headers, ref offset);
-			CopyToArray(buffer, body, ref offset);
-
-			return new ArraySegment<byte>(buffer, 0, totalLength);
+			return new List<ArraySegment<byte>>
+			{
+				new ArraySegment<byte>(identifierLength),
+				new ArraySegment<byte>(headersLength),
+				new ArraySegment<byte>(bodyLength),
+				new ArraySegment<byte>(identifier),
+				new ArraySegment<byte>(headers),
+				new ArraySegment<byte>(body)
+			};
 		}
 
 		public static MediumDeserializedObject Deserialize(byte[] requestSerialized)

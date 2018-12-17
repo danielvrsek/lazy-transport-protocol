@@ -1,5 +1,4 @@
 ﻿using LazyTransportProtocol.Core.Application.Protocol.Model;
-using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Requests.Abstractions;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Protocol.Responses.Abstractions;
@@ -13,7 +12,6 @@ using LazyTransportProtocol.Core.Domain.Exceptions.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 
@@ -75,7 +73,7 @@ namespace LazyTransportProtocol.Server
 
 				string controlCommand = encoder.Decode(requestObject.ControlCommand);
 
-				ArraySegment<byte> serializedResponse = null;
+				IList<ArraySegment<byte>> serializedResponse = null;
 				Type requestType = _availableRequests.GetRequestType(controlCommand);
 				if (requestType != null)
 				{
@@ -83,7 +81,7 @@ namespace LazyTransportProtocol.Server
 					{
 						Type protocolRequestInterface = requestType.GetInterfaces().FirstOrDefault(x => typeof(IProtocolRequest<IProtocolResponse>).IsAssignableFrom(x));
 						Type responseType = protocolRequestInterface.GenericTypeArguments[0];
-						serializedResponse = (ArraySegment<byte>)_executeMethod.MakeGenericMethod(requestType, responseType).Invoke(null, new object[] { requestObject.Body });
+						serializedResponse = (IList<ArraySegment<byte>>)_executeMethod.MakeGenericMethod(requestType, responseType).Invoke(null, new object[] { requestObject.Body });
 					}
 					catch
 					{
@@ -111,11 +109,11 @@ namespace LazyTransportProtocol.Server
 			}
 		}
 
-		private static ArraySegment<byte> Execute<TRequest, TResponse>(ArraySegment<byte> body)
+		private static IList<ArraySegment<byte>> Execute<TRequest, TResponse>(ArraySegment<byte> body)
 			where TRequest : IProtocolRequest<TResponse>
 			where TResponse : class, IProtocolResponse, new()
 		{
-			ArraySegment<byte> serializedResponse = null;
+			IList<ArraySegment<byte>> serializedResponse = null;
 
 			try
 			{
@@ -156,7 +154,7 @@ namespace LazyTransportProtocol.Server
 			return serializedResponse;
 		}
 
-		private static ArraySegment<byte> SerializeResponse<TResponse>(TResponse protocolResponse)
+		private static IList<ArraySegment<byte>> SerializeResponse<TResponse>(TResponse protocolResponse)
 			where TResponse : IProtocolResponse, new()
 		{
 			ProtocolEncoder encoder = new ProtocolEncoder();

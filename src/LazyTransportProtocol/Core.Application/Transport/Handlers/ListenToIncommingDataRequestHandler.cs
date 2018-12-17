@@ -140,12 +140,20 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			}
 		}
 
-		private void Send(StateObject state, ArraySegment<byte> data)
+		private void Send(StateObject state, IList<ArraySegment<byte>> data)
 		{
 			try
 			{
-				ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(data.Count));
-				List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>> { dataLength, data };
+				int transportDataLength = 0;
+				foreach (var segment in data)
+				{
+					transportDataLength += segment.Count;
+				}
+				// Possible optimization would be to add datalength buffer and set its value after
+				ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(transportDataLength));
+				List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>>();
+				transportData.Add(dataLength);
+				transportData.AddRange(data);
 
 				state.WorkSocket.BeginSend(transportData, 0, new AsyncCallback(OnSendCompleted), state);
 			}

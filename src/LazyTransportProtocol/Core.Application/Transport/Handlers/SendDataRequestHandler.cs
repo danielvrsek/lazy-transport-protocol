@@ -13,8 +13,17 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 	{
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
-			ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(request.Data.Count));
-			List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>> { dataLength, request.Data };
+			int transportDataLength = 0;
+
+			foreach (var segment in request.Data)
+			{
+				transportDataLength += segment.Count;
+			}
+
+			ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(transportDataLength));
+			List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>>();
+			transportData.Add(dataLength);
+			transportData.AddRange(request.Data);
 
 			Socket socket = request.Sender;
 			socket.Send(transportData);
@@ -40,7 +49,6 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			int dataLength = BitConverter.ToInt32(dataLengthBytes, 0);
 
 			byte[] data = new byte[dataLength];
-
 			int received = socket.Receive(data);
 
 			while (received != dataLength)

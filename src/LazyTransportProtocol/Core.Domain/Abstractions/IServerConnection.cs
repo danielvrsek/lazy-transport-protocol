@@ -1,12 +1,11 @@
 using System;
+using System.Collections.Generic;
 
 namespace LazyTransportProtocol.Core.Domain.Abstractions
 {
 	public interface IServerConnection
 	{
-		byte[] Send(ArraySegment<byte> data);
-
-		void SendAsync(ArraySegment<byte> data, Action<byte[]> responseCallback);
+		byte[] Send(IList<ArraySegment<byte>> data);
 
 		void Disconnect();
 
