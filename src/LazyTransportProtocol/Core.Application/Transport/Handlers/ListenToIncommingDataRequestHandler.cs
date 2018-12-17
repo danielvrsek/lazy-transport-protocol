@@ -1,10 +1,10 @@
-using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Model;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -140,14 +140,14 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 			}
 		}
 
-		private void Send(StateObject state, byte[] data)
+		private void Send(StateObject state, ArraySegment<byte> data)
 		{
 			try
 			{
-				byte[] dataLength = BitConverter.GetBytes(data.Length);
-				byte[] transportData = dataLength.Append(data);
+				ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(data.Count));
+				List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>> { dataLength, data };
 
-				state.WorkSocket.BeginSend(transportData, 0, transportData.Length, 0, new AsyncCallback(OnSendCompleted), state);
+				state.WorkSocket.BeginSend(transportData, 0, new AsyncCallback(OnSendCompleted), state);
 			}
 			catch (Exception e)
 			{

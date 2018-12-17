@@ -16,7 +16,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 
 		public Socket Sender { get; }
 
-		public byte[] Send(byte[] data)
+		public byte[] Send(ArraySegment<byte> data)
 		{
 			var response = _transportExecutor.Execute(new SendDataRequest
 			{
@@ -27,7 +27,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Infrastructure
 			return response.ResponseData;
 		}
 
-		public void SendAsync(byte[] data, Action<byte[]> responseCallback)
+		public void SendAsync(ArraySegment<byte> data, Action<byte[]> responseCallback)
 		{
 			throw new NotImplementedException();
 		}

@@ -47,29 +47,29 @@ namespace LazyTransportProtocol.Core.Application.Client.Protocol
 
 			MessageHeadersDictionary headers = new MessageHeadersDictionary();
 
-			string requestHeaders = ProtocolMessageHeaderSerializer.Serialize(headers);
-			string requestBody = ProtocolBodySerializer.Serialize(request);
-			string requestIdentifier = request.GetIdentifier();
-			string requestString = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody);
+			byte[] requestHeaders = ProtocolMessageHeaderSerializer.Serialize(headers);
+			byte[] requestBody = ProtocolBodySerializer.Serialize(request);
+			byte[] requestIdentifier = _encoder.Encode(request.GetIdentifier());
+			ArraySegment<byte> serializedRequest = ProtocolSerializer.Serialize(requestIdentifier, requestHeaders, requestBody);
 
-			byte[] responseEncoded = _connection.Send(requestEncoded);
-			string responseDecoded = _encoder.Decode(responseEncoded);
+			byte[] responseEncoded = _connection.Send(serializedRequest);
 
-			var requestObject = ProtocolSerializer.Deserialize(responseDecoded);
-			string identifier = new TResponse().GetIdentifier();
+			var deserializedObject = ProtocolSerializer.Deserialize(responseEncoded);
+			string expectedIdentifier = new TResponse().GetIdentifier();
+			string identifier = _encoder.Decode(deserializedObject.ControlCommand);
 
-			if (requestObject.ControlCommand != identifier)
+			if (identifier != expectedIdentifier)
 			{
-				if (requestObject.ControlCommand == ErrorResponse.Identifier)
+				if (identifier == ErrorResponse.Identifier)
 				{
-					ErrorResponse errorResponse = ProtocolBodySerializer.Deserialize<ErrorResponse>(requestObject.Body);
+					ErrorResponse errorResponse = ProtocolBodySerializer.Deserialize<ErrorResponse>(deserializedObject.Body);
 					throw new CustomException(errorResponse.Message);
 				}
 
 				throw new InvalidResponseException();
 			}
 
-			TResponse response = ProtocolBodySerializer.Deserialize<TResponse>(requestObject.Body);
+			TResponse response = ProtocolBodySerializer.Deserialize<TResponse>(deserializedObject.Body);
 
 			return response;
 		}

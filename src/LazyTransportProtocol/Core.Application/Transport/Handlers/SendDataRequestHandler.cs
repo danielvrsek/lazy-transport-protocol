@@ -1,8 +1,8 @@
-using LazyTransportProtocol.Core.Application.Transport.Extensions;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,8 +13,8 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 	{
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
-			byte[] dataLength = BitConverter.GetBytes(request.Data.Length);
-			byte[] transportData = dataLength.Append(request.Data);
+			ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(request.Data.Count));
+			List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>> { dataLength, request.Data };
 
 			Socket socket = request.Sender;
 			socket.Send(transportData);

@@ -1,13 +1,12 @@
 using System;
-using System.Net.Sockets;
 
 namespace LazyTransportProtocol.Core.Domain.Abstractions
 {
 	public interface IServerConnection
 	{
-		byte[] Send(byte[] data);
+		byte[] Send(ArraySegment<byte> data);
 
-		void SendAsync(byte[] data, Action<byte[]> responseCallback);
+		void SendAsync(ArraySegment<byte> data, Action<byte[]> responseCallback);
 
 		void Disconnect();
 

@@ -37,115 +37,124 @@ namespace LazyTransportProtocol.Server
 			{
 				ProtocolEncoder encoder = new ProtocolEncoder();
 
-				string requestString = encoder.Decode(data);
-
 				MediumDeserializedObject requestObject = null;
 				try
 				{
-					requestObject = ProtocolSerializer.Deserialize(requestString);
+					requestObject = ProtocolSerializer.Deserialize(data);
 				}
 				catch (Exception e)
 				{
 					Console.WriteLine(e.Message);
 				}
 
-				IProtocolResponse protocolResponse = null;
-				IProtocolRequest<IProtocolResponse> request = null;
+				ArraySegment<byte> serializedResponse = null;
 
-				switch (requestObject.ControlCommand)
+				string controlCommand = encoder.Decode(requestObject.ControlCommand);
+
+				switch (controlCommand)
 				{
 					case CreateUserRequest.Identifier:
-						Deserialize<CreateUserRequest>();
+						serializedResponse = Execute<CreateUserRequest, AcknowledgementResponse>(requestObject.Body);
 						break;
 
 					case DeleteUserRequest.Identifier:
-						Deserialize<DeleteUserRequest>();
+						serializedResponse = Execute<DeleteUserRequest, AcknowledgementResponse>(requestObject.Body);
 						break;
 
 					case AuthenticationRequest.Identifier:
-						Deserialize<AuthenticationRequest>();
+						serializedResponse = Execute<AuthenticationRequest, AuthenticationResponse>(requestObject.Body);
 						break;
 
 					case ListDirectoryClientRequest.Identifier:
-						Deserialize<ListDirectoryClientRequest>();
+						serializedResponse = Execute<ListDirectoryClientRequest, ListDirectoryResponse>(requestObject.Body);
 						break;
 
 					case DownloadFileRequest.Identifier:
-						Deserialize<DownloadFileRequest>();
+						serializedResponse = Execute<DownloadFileRequest, DownloadFileResponse>(requestObject.Body);
 						break;
 
 					case CreateDirectoryRequest.Identifier:
-						Deserialize<CreateDirectoryRequest>();
+						serializedResponse = Execute<CreateDirectoryRequest, AcknowledgementResponse>(requestObject.Body);
 						break;
 
 					case UploadFileRequest.Identifier:
-						Deserialize<UploadFileRequest>();
+						serializedResponse = Execute<UploadFileRequest, AcknowledgementResponse>(requestObject.Body);
 						break;
 
 					default:
-						protocolResponse = new ErrorResponse
+						serializedResponse = SerializeResponse(new ErrorResponse
 						{
 							Code = 400,
 							Message = "Unsupported request."
-						};
+						});
 						break;
 				}
 
-				void Deserialize<TRequest>()
-					where TRequest : IProtocolRequest<IProtocolResponse>
-				{
-					try
-					{
-						request = ProtocolBodySerializer.Deserialize<TRequest>(requestObject.Body);
-						protocolResponse = executor.Execute(request);
-					}
-					catch (AuthorizationException e)
-					{
-						protocolResponse = new ErrorResponse
-						{
-							Code = 403,
-							Message = "Unauthorized."
-						};
-
-						Console.WriteLine("AuthorizationException: " + e.Message + e.StackTrace);
-					}
-					catch (CustomException e)
-					{
-						protocolResponse = new ErrorResponse
-						{
-							Code = 400,
-							Message = e.Message
-						};
-
-						Console.WriteLine("CustomException: " + e.Message + e.StackTrace);
-					}
-					catch (Exception e)
-					{
-						protocolResponse = new ErrorResponse
-						{
-							Code = 500,
-							Message = "Internal server error."
-						};
-
-						Console.WriteLine("UnhandledException: " + e.Message + e.StackTrace);
-					}
-				}
-
-				MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
-
-				string identifier = protocolResponse.GetIdentifier();
-				string headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders);
-				string serializedBody = ProtocolBodySerializer.Serialize(protocolResponse);
-				string serializedResponse = ProtocolSerializer.Serialize(identifier, headers, serializedBody);
-
-				byte[] bytes = encoder.Encode(serializedResponse);
-
-				connection.Send(bytes);
+				connection.Send(serializedResponse);
 			}
 			catch (Exception e)
 			{
 				Console.WriteLine(e.Message);
 			}
+		}
+
+		private static ArraySegment<byte> Execute<TRequest, TResponse>(ArraySegment<byte> body)
+			where TRequest : IProtocolRequest<TResponse>
+			where TResponse : class, IProtocolResponse, new()
+		{
+			ArraySegment<byte> serializedResponse = null;
+
+			try
+			{
+				TRequest request = ProtocolBodySerializer.Deserialize<TRequest>(body);
+				serializedResponse = SerializeResponse(executor.Execute(request));
+			}
+			catch (AuthorizationException e)
+			{
+				serializedResponse = SerializeResponse(new ErrorResponse
+				{
+					Code = 403,
+					Message = "Unauthorized."
+				});
+
+				Console.WriteLine("AuthorizationException: " + e.Message + e.StackTrace);
+			}
+			catch (CustomException e)
+			{
+				serializedResponse = SerializeResponse(new ErrorResponse
+				{
+					Code = 400,
+					Message = e.Message
+				});
+
+				Console.WriteLine("CustomException: " + e.Message + e.StackTrace);
+			}
+			catch (Exception e)
+			{
+				serializedResponse = SerializeResponse(new ErrorResponse
+				{
+					Code = 500,
+					Message = "Internal server error."
+				});
+
+				Console.WriteLine("UnhandledException: " + e.Message + e.StackTrace);
+			}
+
+			return serializedResponse;
+		}
+
+		private static ArraySegment<byte> SerializeResponse<TResponse>(TResponse protocolResponse)
+			where TResponse : IProtocolResponse, new()
+		{
+			ProtocolEncoder encoder = new ProtocolEncoder();
+
+			MessageHeadersDictionary responseHeaders = new MessageHeadersDictionary();
+
+			byte[] identifier = encoder.Encode(protocolResponse.GetIdentifier());
+			byte[] headers = ProtocolMessageHeaderSerializer.Serialize(responseHeaders);
+			byte[] serializedBody = ProtocolBodySerializer.Serialize(protocolResponse);
+
+			return ProtocolSerializer.Serialize(identifier, headers, serializedBody);
 		}
 
 		private static void OnErrorOccured(ErrorContext ctx)

@@ -57,7 +57,8 @@ namespace LazyTransportProtocol.Server
 
 			if (!Directory.Exists(serverConfig.RootFolder))
 			{
-				throw new Exception("Root folder must exist.");
+				Directory.CreateDirectory(serverConfig.RootFolder);
+				//throw new Exception("Root folder must exist.");
 			}
 		}
 

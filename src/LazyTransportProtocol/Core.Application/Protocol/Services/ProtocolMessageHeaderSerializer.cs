@@ -1,5 +1,4 @@
 using LazyTransportProtocol.Core.Application.Protocol.Model;
-using LazyTransportProtocol.Core.Application.Protocol.ValueTypes;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text;
@@ -9,8 +8,10 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 {
 	public class ProtocolMessageHeaderSerializer
 	{
-		public static string Serialize(MessageHeadersDictionary requestHeaders)
+		public static byte[] Serialize(MessageHeadersDictionary requestHeaders)
 		{
+			ProtocolEncoder encoder = new ProtocolEncoder();
+
 			StringBuilder sb = new StringBuilder();
 
 			foreach (KeyValuePair<string, string> header in requestHeaders)
@@ -23,10 +24,10 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 				sb.Append($"{header.Key}={header.Value}");
 			}
 
-			return sb.ToString();
+			return encoder.Encode(sb.ToString());
 		}
 
-		public MessageHeadersDictionary Deserialize(string headersString, ProtocolVersion protocolVersion)
+		public MessageHeadersDictionary Deserialize(string headersString)
 		{
 			NameValueCollection collection = HttpUtility.ParseQueryString(headersString);
 
