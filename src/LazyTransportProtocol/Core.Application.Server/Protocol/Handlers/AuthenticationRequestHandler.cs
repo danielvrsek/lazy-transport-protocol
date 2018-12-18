@@ -1,6 +1,5 @@
 using JWT;
 using JWT.Algorithms;
-using JWT.Serializers;
 using LazyTransportProtocol.Core.Application.Protocol.Requests;
 using LazyTransportProtocol.Core.Application.Protocol.Responses;
 using LazyTransportProtocol.Core.Application.Server.Configuration;
@@ -39,7 +38,7 @@ namespace LazyTransportProtocol.Core.Application.Server.Protocol.Handlers
 				string secret = ServerConfiguration.Instance().ServerSecret;
 
 				IJwtAlgorithm algorithm = new HMACSHA256Algorithm();
-				IJsonSerializer serializer = new JsonNetSerializer();
+				IJsonSerializer serializer = new FastJSONSerializer();
 				IBase64UrlEncoder urlEncoder = new JwtBase64UrlEncoder();
 				IJwtEncoder encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
 

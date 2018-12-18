@@ -1,7 +1,7 @@
-﻿using LazyTransportProtocol.Core.Application.Server.Configuration;
+﻿using fastJSON;
+using LazyTransportProtocol.Core.Application.Server.Configuration;
 using LazyTransportProtocol.Core.Application.Server.Services;
 using LazyTransportProtocol.Core.Application.Server.Services.Abstractions;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
@@ -93,7 +93,7 @@ namespace LazyTransportProtocol.Server
 			{
 				if (!File.Exists(configPath))
 				{
-					string json = JsonConvert.SerializeObject(serverConfig);
+					string json = JSON.ToJSON(serverConfig);
 
 					using (StreamWriter sw = new StreamWriter(configPath))
 					{
@@ -105,7 +105,7 @@ namespace LazyTransportProtocol.Server
 					ServerConfiguration loadedConfig;
 					using (StreamReader sr = new StreamReader(configPath))
 					{
-						loadedConfig = JsonConvert.DeserializeObject<ServerConfiguration>(sr.ReadToEnd());
+						loadedConfig = JSON.ToObject<ServerConfiguration>(sr.ReadToEnd());
 
 						serverConfig.RootFolder = loadedConfig.RootFolder ?? serverConfig.RootFolder;
 						serverConfig.UserSecretFilepath = loadedConfig.UserSecretFilepath ?? serverConfig.UserSecretFilepath;
@@ -113,7 +113,7 @@ namespace LazyTransportProtocol.Server
 					}
 
 					// Update with "new" values
-					string json = JsonConvert.SerializeObject(serverConfig);
+					string json = JSON.ToJSON(serverConfig);
 
 					using (StreamWriter sw = new StreamWriter(configPath))
 					{

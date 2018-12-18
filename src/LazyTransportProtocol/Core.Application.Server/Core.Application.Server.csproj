@@ -6,11 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JWT" Version="4.0.0" />
+    <PackageReference Include="fastJSON" Version="2.2.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Core.Application\Core.Application.csproj" />
+    <ProjectReference Include="..\JWT\JWT.csproj" />
   </ItemGroup>
 
 </Project>
