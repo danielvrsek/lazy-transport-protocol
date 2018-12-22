@@ -2,6 +2,7 @@ using LazyTransportProtocol.Core.Application.Transport.Infrastructure;
 using LazyTransportProtocol.Core.Application.Transport.Model;
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
+using LazyTransportProtocol.Core.Application.Transport.Services;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
 using System.Collections.Generic;
@@ -144,16 +145,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 		{
 			try
 			{
-				int transportDataLength = 0;
-				foreach (var segment in data)
-				{
-					transportDataLength += segment.Count;
-				}
-				// Possible optimization would be to add datalength buffer and set its value after
-				ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(transportDataLength));
-				List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>>();
-				transportData.Add(dataLength);
-				transportData.AddRange(data);
+				IList<ArraySegment<byte>> transportData = TransportSerializer.Serialize(data);
 
 				state.WorkSocket.BeginSend(transportData, 0, new AsyncCallback(OnSendCompleted), state);
 			}

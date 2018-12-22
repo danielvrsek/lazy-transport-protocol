@@ -54,7 +54,6 @@ namespace LazyTransportProtocol.Client.Services
 			{
 				Console.SetCursorPosition(_currentCursorPosition, _cursorRow);
 				Console.Write(text);
-				_elapsed = _sw.ElapsedMilliseconds;
 			}
 		}
 

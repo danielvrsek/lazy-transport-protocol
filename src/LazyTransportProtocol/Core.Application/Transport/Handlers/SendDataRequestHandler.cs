@@ -1,5 +1,6 @@
 using LazyTransportProtocol.Core.Application.Transport.Requests;
 using LazyTransportProtocol.Core.Application.Transport.Responses;
+using LazyTransportProtocol.Core.Application.Transport.Services;
 using LazyTransportProtocol.Core.Domain.Abstractions.Requests;
 using System;
 using System.Collections.Generic;
@@ -13,17 +14,7 @@ namespace LazyTransportProtocol.Core.Application.Transport.Handlers
 	{
 		public SendDataResponse GetResponse(SendDataRequest request)
 		{
-			int transportDataLength = 0;
-
-			foreach (var segment in request.Data)
-			{
-				transportDataLength += segment.Count;
-			}
-
-			ArraySegment<byte> dataLength = new ArraySegment<byte>(BitConverter.GetBytes(transportDataLength));
-			List<ArraySegment<byte>> transportData = new List<ArraySegment<byte>>();
-			transportData.Add(dataLength);
-			transportData.AddRange(request.Data);
+			IList<ArraySegment<byte>> transportData = TransportSerializer.Serialize(request.Data);
 
 			Socket socket = request.Sender;
 			socket.Send(transportData);
