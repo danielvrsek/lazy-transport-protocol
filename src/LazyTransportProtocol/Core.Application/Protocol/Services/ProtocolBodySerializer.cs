@@ -1,4 +1,3 @@
-using LazyTransportProtocol.Core.Domain.Abstractions.Common;
 using MessagePack;
 using MessagePack.Resolvers;
 using System;
@@ -9,19 +8,12 @@ namespace LazyTransportProtocol.Core.Application.Protocol.Services
 	{
 		public static byte[] Serialize<T>(T request)
 		{
-			return SerializeInternal(request);
-		}
-
-		private static byte[] SerializeInternal<T>(T obj)
-		{
-			if (obj == null)
+			if (request == null)
 			{
-				throw new ArgumentException("Argument cannot be null.", nameof(obj));
+				throw new ArgumentException("Argument cannot be null.", nameof(request));
 			}
 
-			IEncoder protocolEncoder = new ProtocolEncoder();
-
-			return MessagePackSerializer.Serialize<object>(obj, ContractlessStandardResolver.Instance);
+			return MessagePackSerializer.Serialize<object>(request, ContractlessStandardResolver.Instance);
 		}
 
 		public static T Deserialize<T>(ArraySegment<byte> requestBody)
